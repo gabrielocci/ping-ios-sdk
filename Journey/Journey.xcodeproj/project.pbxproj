@@ -72,10 +72,6 @@
 		EC2326A82E0D7C7900634A50 /* AgentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC2326A72E0D7C7800634A50 /* AgentTests.swift */; };
 		EC4FF9132EE0569600A35D3A /* PingOidc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9122EE0569600A35D3A /* PingOidc.framework */; };
 		EC4FF9142EE0569600A35D3A /* PingOidc.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9122EE0569600A35D3A /* PingOidc.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		EC4FF9162EE056A900A35D3A /* PingOrchestrate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9152EE056A900A35D3A /* PingOrchestrate.framework */; };
-		EC4FF9172EE056A900A35D3A /* PingOrchestrate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9152EE056A900A35D3A /* PingOrchestrate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		EC4FF9192EE056AE00A35D3A /* PingStorage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9182EE056AE00A35D3A /* PingStorage.framework */; };
-		EC4FF91A2EE056AE00A35D3A /* PingStorage.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EC4FF9182EE056AE00A35D3A /* PingStorage.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EC5C81E22ED0824200C91570 /* PingJourneyPlugin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC5C81E12ED0824200C91570 /* PingJourneyPlugin.framework */; };
 		EC5C81E32ED0824200C91570 /* PingJourneyPlugin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EC5C81E12ED0824200C91570 /* PingJourneyPlugin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EC727A2E2E019243005D9E28 /* PingJourney.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC727A242E019243005D9E28 /* PingJourney.framework */; };
@@ -123,8 +119,6 @@
 			dstSubfolderSpec = 10;
 			files = (
 				EC4FF9142EE0569600A35D3A /* PingOidc.framework in Embed Frameworks */,
-				EC4FF9172EE056A900A35D3A /* PingOrchestrate.framework in Embed Frameworks */,
-				EC4FF91A2EE056AE00A35D3A /* PingStorage.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -167,6 +161,7 @@
 		95DA7BFA2E4E7DCC00168E1A /* ValidatePasswordCallbackE2ETest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidatePasswordCallbackE2ETest.swift; sourceTree = "<group>"; };
 		A50585142E3D05FA004813B5 /* ConfirmationCallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationCallbackTests.swift; sourceTree = "<group>"; };
 		A50585162E3D13B2004813B5 /* KbaCreateCallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KbaCreateCallbackTests.swift; sourceTree = "<group>"; };
+		A53A9B492F1983D6000E2F2C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A5768D1D2E29B37A000290EE /* ConsentMappingCallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentMappingCallback.swift; sourceTree = "<group>"; };
 		A5AB903F2E26954A000E1089 /* TermsAndConditionsCallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermsAndConditionsCallback.swift; sourceTree = "<group>"; };
 		A5AB90412E2695B7000E1089 /* TextOutputCallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextOutputCallback.swift; sourceTree = "<group>"; };
@@ -207,10 +202,7 @@
 		EC2326A32E0D670D00634A50 /* JourneyContinueNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyContinueNodeTests.swift; sourceTree = "<group>"; };
 		EC2326A52E0D744A00634A50 /* JourneyUserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyUserTests.swift; sourceTree = "<group>"; };
 		EC2326A72E0D7C7800634A50 /* AgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTests.swift; sourceTree = "<group>"; };
-		EC4FF90E2EE0568F00A35D3A /* PingStorage.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingStorage.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC4FF9122EE0569600A35D3A /* PingOidc.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOidc.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		EC4FF9152EE056A900A35D3A /* PingOrchestrate.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOrchestrate.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		EC4FF9182EE056AE00A35D3A /* PingStorage.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingStorage.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC5C81E12ED0824200C91570 /* PingJourneyPlugin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingJourneyPlugin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC727A242E019243005D9E28 /* PingJourney.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PingJourney.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC727A2D2E019243005D9E28 /* JourneyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JourneyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -219,7 +211,6 @@
 		EC727A632E0192FA005D9E28 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		EC727A642E0192FA005D9E28 /* Journey.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Journey.h; sourceTree = "<group>"; };
 		EC727A912E02DCA9005D9E28 /* PingOidc.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOidc.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		EC727A952E02DCAF005D9E28 /* PingOrchestrate.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOrchestrate.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC727A992E02DCFF005D9E28 /* Oidc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Oidc.swift; sourceTree = "<group>"; };
 		EC727AC82E031C86005D9E28 /* Request.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Request.swift; sourceTree = "<group>"; };
 		EC727ACA2E042A22005D9E28 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
@@ -257,8 +248,6 @@
 				951773AB2EA934910081AEDE /* PingDeviceProfile.framework in Frameworks */,
 				EC727A2E2E019243005D9E28 /* PingJourney.framework in Frameworks */,
 				EC4FF9132EE0569600A35D3A /* PingOidc.framework in Frameworks */,
-				EC4FF9192EE056AE00A35D3A /* PingStorage.framework in Frameworks */,
-				EC4FF9162EE056A900A35D3A /* PingOrchestrate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,6 +311,7 @@
 		EC727A1A2E019243005D9E28 = {
 			isa = PBXGroup;
 			children = (
+				A53A9B492F1983D6000E2F2C /* README.md */,
 				EC727A5C2E019254005D9E28 /* Journey */,
 				EC727A5F2E019258005D9E28 /* JourneyTests */,
 				EC727A902E02DCA9005D9E28 /* Frameworks */,
@@ -374,13 +364,9 @@
 		EC727A902E02DCA9005D9E28 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				EC4FF9182EE056AE00A35D3A /* PingStorage.framework */,
-				EC4FF9152EE056A900A35D3A /* PingOrchestrate.framework */,
 				EC4FF9122EE0569600A35D3A /* PingOidc.framework */,
-				EC4FF90E2EE0568F00A35D3A /* PingStorage.framework */,
 				EC5C81E12ED0824200C91570 /* PingJourneyPlugin.framework */,
 				951773AA2EA934910081AEDE /* PingDeviceProfile.framework */,
-				EC727A952E02DCAF005D9E28 /* PingOrchestrate.framework */,
 				EC727A912E02DCA9005D9E28 /* PingOidc.framework */,
 			);
 			name = Frameworks;
@@ -870,7 +856,7 @@
 				DEVELOPMENT_TEAM = 9QSE66762D;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 2.0.0-alpha;
+				MARKETING_VERSION = "2.0.0-alpha";
 				PRODUCT_BUNDLE_IDENTIFIER = com.pingidentity.JourneyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -888,7 +874,7 @@
 				DEVELOPMENT_TEAM = 9QSE66762D;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 2.0.0-alpha;
+				MARKETING_VERSION = "2.0.0-alpha";
 				PRODUCT_BUNDLE_IDENTIFIER = com.pingidentity.JourneyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;

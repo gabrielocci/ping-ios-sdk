@@ -171,8 +171,8 @@
 		A569DBE72E78A0FC00F4D7A8 /* DeviceProfile */ = {
 			isa = PBXGroup;
 			children = (
-				A5554B262E840F6400BA6217 /* DeviceProfile.h */,
 				A5BE8C792E8C4A8F007AF0B9 /* PrivacyInfo.xcprivacy */,
+				A5554B262E840F6400BA6217 /* DeviceProfile.h */,
 				A5D296852E79D73D0093A761 /* Collectors */,
 				A569DBE62E78A0FC00F4D7A8 /* DeviceProfile.swift */,
 				A5D2967D2E79D4BA0093A761 /* DeviceProfileCallback.swift */,

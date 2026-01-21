@@ -19,8 +19,8 @@
 		A570D51B2ECC0E3200CBBCCF /* DeviceClient.h in Headers */ = {isa = PBXBuildFile; fileRef = A570D51A2ECC0E3200CBBCCF /* DeviceClient.h */; };
 		A570D51F2ECC0FA200CBBCCF /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = A570D51E2ECC0FA100CBBCCF /* Device.swift */; };
 		A570D5242ECC144400CBBCCF /* DeviceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A570D5232ECC143F00CBBCCF /* DeviceError.swift */; };
-		A570D5322ECCECD900CBBCCF /* PingOrchestrate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A570D5312ECCECD900CBBCCF /* PingOrchestrate.framework */; };
-		A570D5332ECCECD900CBBCCF /* PingOrchestrate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A570D5312ECCECD900CBBCCF /* PingOrchestrate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A57AF0002EEB328B004C4119 /* PingNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A57AEFFF2EEB328B004C4119 /* PingNetwork.framework */; };
+		A57AF0012EEB328B004C4119 /* PingNetwork.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A57AEFFF2EEB328B004C4119 /* PingNetwork.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,7 +40,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A570D5332ECCECD900CBBCCF /* PingOrchestrate.framework in Embed Frameworks */,
+				A57AF0012EEB328B004C4119 /* PingNetwork.framework in Embed Frameworks */,
 				A56742262EE219C4009D29B9 /* PingCommons.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -61,9 +61,9 @@
 		A570D51A2ECC0E3200CBBCCF /* DeviceClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeviceClient.h; sourceTree = "<group>"; };
 		A570D51E2ECC0FA100CBBCCF /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		A570D5232ECC143F00CBBCCF /* DeviceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceError.swift; sourceTree = "<group>"; };
-		A570D5262ECC188900CBBCCF /* PingLogger.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingLogger.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A570D52A2ECC189000CBBCCF /* PingOrchestrate.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOrchestrate.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A570D5312ECCECD900CBBCCF /* PingOrchestrate.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingOrchestrate.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A57AEFFF2EEB328B004C4119 /* PingNetwork.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingNetwork.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,7 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A570D5322ECCECD900CBBCCF /* PingOrchestrate.framework in Frameworks */,
+				A57AF0002EEB328B004C4119 /* PingNetwork.framework in Frameworks */,
 				A56742252EE219C4009D29B9 /* PingCommons.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -132,10 +132,10 @@
 		A570D5252ECC188900CBBCCF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A57AEFFF2EEB328B004C4119 /* PingNetwork.framework */,
 				A56742242EE219C4009D29B9 /* PingCommons.framework */,
 				A570D5312ECCECD900CBBCCF /* PingOrchestrate.framework */,
 				A570D52A2ECC189000CBBCCF /* PingOrchestrate.framework */,
-				A570D5262ECC188900CBBCCF /* PingLogger.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

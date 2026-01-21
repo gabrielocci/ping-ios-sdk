@@ -2,7 +2,7 @@
 //  PushClient.swift
 //  PingPush
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -11,8 +11,9 @@
 import Foundation
 import PingLogger
 import PingCommons
+import PingNetwork
 import PingTamperDetector
-import PingOrchestrate
+
 
 /// Public-facing client that orchestrates Push MFA operations.
 ///
@@ -26,7 +27,7 @@ public final class PushClient: @unchecked Sendable {
 
     private let configuration: PushConfiguration
     private let storage: any PushStorage
-    private let httpClient: HttpClient
+    private let httpClient: any HttpClientProtocol
     private let pushService: PushService
     private let cleanupManager: NotificationCleanupManager
     private let logger: Logger
@@ -453,16 +454,17 @@ public final class PushClient: @unchecked Sendable {
     private static func makeHttpClient(
         timeoutMs: Int,
         logger: Logger?
-    ) throws -> HttpClient {
-        let client = HttpClient()
-        client.timeoutIntervalForRequest = TimeInterval(timeoutMs) / 1000.0
+    ) throws -> any HttpClientProtocol {
+        let client = HttpClient.createClient { config in
+            config.timeout = TimeInterval(timeoutMs) / 1000.0
+        }
         return client
     }
 
     private static func makePushService(
         storage: any PushStorage,
         configuration: PushConfiguration,
-        httpClient: HttpClient,
+        httpClient: any HttpClientProtocol,
         policyEvaluator: MfaPolicyEvaluator
     ) throws -> PushService {
         return PushService(

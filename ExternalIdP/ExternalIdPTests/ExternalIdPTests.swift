@@ -2,7 +2,7 @@
 //  ExternalIdPTests.swift
 //  ExternalIdPTests
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -12,6 +12,7 @@ import XCTest
 @testable import PingDavinciPlugin
 @testable import PingExternalIdP
 @testable import PingOrchestrate
+@testable import PingNetwork
 
 @MainActor
 final class ExternalIdPTests: XCTestCase {
@@ -22,10 +23,8 @@ final class ExternalIdPTests: XCTestCase {
     
     func testIdpCollectorRegistration() async throws {
         IdpCollector.registerCollector()
-        Task {
-            let idpCollector = await CollectorFactory.shared.collectors[Constants.SOCIAL_LOGIN_BUTTON]
-            XCTAssertNotNil(idpCollector)
-        }
+        let idpCollector = await CollectorFactory.shared.collectorCreationClosures[Constants.SOCIAL_LOGIN_BUTTON]
+        XCTAssertNotNil(idpCollector)
     }
 
     func testIdpCollectorParsing() throws {
@@ -94,14 +93,16 @@ class WorkflowMock: Workflow, @unchecked Sendable {
     }
 }
 
-class FlowContextMock: FlowContext {}
+class FlowContextMock: FlowContext, @unchecked Sendable {}
 
 class NodeMock: Node, @unchecked Sendable {}
 
 class TestContinueNode: ContinueNode, @unchecked Sendable {
     override func asRequest() -> Request {
-        return RequestMock(urlString: "https://openam.example.com")
+        let request = RequestMock()
+        request.url = "https://openam.example.com"
+        return request
     }
 }
 
-class RequestMock: Request, @unchecked Sendable {}
+class RequestMock: URLSessionHttpRequest, @unchecked Sendable { }

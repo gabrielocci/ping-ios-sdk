@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A552A7CA2F1699CD003CA76C /* PingJourneyPlugin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A552A7C92F1699CD003CA76C /* PingJourneyPlugin.framework */; };
+		A552A7CB2F1699CD003CA76C /* PingJourneyPlugin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A552A7C92F1699CD003CA76C /* PingJourneyPlugin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A5A31CA52E0A37C700ABBEF7 /* PingProtect.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A31C9C2E0A37C700ABBEF7 /* PingProtect.framework */; };
 		A5A31CE82E0A41C600ABBEF7 /* PingOneSignals in Frameworks */ = {isa = PBXBuildFile; productRef = A5A31CE72E0A41C600ABBEF7 /* PingOneSignals */; };
 		A5B38B822E4C0B4400692B2B /* MockProtect.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B38B812E4C0B3D00692B2B /* MockProtect.swift */; };
@@ -59,6 +61,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				A552A7CB2F1699CD003CA76C /* PingJourneyPlugin.framework in Embed Frameworks */,
 				EC5C81D02ECF8CD600C91570 /* PingDavinciPlugin.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -68,6 +71,8 @@
 
 /* Begin PBXFileReference section */
 		A50F945B2E27FA9D00C74086 /* PingJourney.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingJourney.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A53A9B4F2F198421000E2F2C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A552A7C92F1699CD003CA76C /* PingJourneyPlugin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingJourneyPlugin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A31C9C2E0A37C700ABBEF7 /* PingProtect.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PingProtect.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A31CA42E0A37C700ABBEF7 /* ProtectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ProtectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5A31CC52E0A3C6600ABBEF7 /* PingDavinci.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingDavinci.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -97,6 +102,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EC5C81CF2ECF8CD600C91570 /* PingDavinciPlugin.framework in Frameworks */,
+				A552A7CA2F1699CD003CA76C /* PingJourneyPlugin.framework in Frameworks */,
 				A5A31CE82E0A41C600ABBEF7 /* PingOneSignals in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -116,6 +122,7 @@
 		A5A31C922E0A37C700ABBEF7 = {
 			isa = PBXGroup;
 			children = (
+				A53A9B4F2F198421000E2F2C /* README.md */,
 				A5F7A4F52E0E276A0033F8B6 /* Protect */,
 				A5F7A4EC2E0E27620033F8B6 /* ProtectTests */,
 				A5A31CC42E0A3C6600ABBEF7 /* Frameworks */,
@@ -135,6 +142,7 @@
 		A5A31CC42E0A3C6600ABBEF7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A552A7C92F1699CD003CA76C /* PingJourneyPlugin.framework */,
 				EC39CC822ED5D10A00ECBA72 /* PingJourneyPlugin.framework */,
 				EC5C81CE2ECF8CD600C91570 /* PingDavinciPlugin.framework */,
 				A50F945B2E27FA9D00C74086 /* PingJourney.framework */,
@@ -159,9 +167,9 @@
 		A5F7A4F52E0E276A0033F8B6 /* Protect */ = {
 			isa = PBXGroup;
 			children = (
-				EC8025B52F0D2E790046C961 /* Journey */,
 				A5F7A4F02E0E276A0033F8B6 /* PrivacyInfo.xcprivacy */,
 				A5F7A4F12E0E276A0033F8B6 /* Protect.h */,
+				EC8025B52F0D2E790046C961 /* Journey */,
 				A5F7A4F22E0E276A0033F8B6 /* Protect.swift */,
 				A5F7A4F32E0E276A0033F8B6 /* ProtectCollector.swift */,
 				A5F7A4EF2E0E276A0033F8B6 /* ProtectError.swift */,

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A5LOG0012F0100000000001 /* PingLogger.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5LOG0002F0100000000001 /* PingLogger.framework */; };
+		A5LOG0022F0100000000001 /* PingLogger.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A5LOG0002F0100000000001 /* PingLogger.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EC23D5872E2FD12100C43D42 /* PingDeviceId.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC23D57D2E2FD12100C43D42 /* PingDeviceId.framework */; };
 		EC92D44E2F1663900083CCF3 /* LegacyDeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC92D44C2F1663900083CCF3 /* LegacyDeviceIdentifier.swift */; };
 		EC92D4512F1668300083CCF3 /* LegacyDeviceIdentifierMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC92D44F2F1667D70083CCF3 /* LegacyDeviceIdentifierMigrationTests.swift */; };
@@ -41,7 +43,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				ECCAB3112E393EDF00BA1C73 /* PingLogger.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,8 +53,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				A5LOG0022F0100000000001 /* PingLogger.framework in Embed Frameworks */,
 				ECCAB3192E393F2F00BA1C73 /* PingStorage.framework in Embed Frameworks */,
-				ECCAB3152E393F2500BA1C73 /* PingLogger.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -61,6 +62,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A53A9B482F1983CA000E2F2C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A5LOG0002F0100000000001 /* PingLogger.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingLogger.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC23D57D2E2FD12100C43D42 /* PingDeviceId.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PingDeviceId.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC23D5862E2FD12100C43D42 /* DeviceIdTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DeviceIdTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC92D44C2F1663900083CCF3 /* LegacyDeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceIdentifier.swift; sourceTree = "<group>"; };
@@ -81,8 +84,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A5LOG0012F0100000000001 /* PingLogger.framework in Frameworks */,
 				ECCAB3182E393F2F00BA1C73 /* PingStorage.framework in Frameworks */,
-				ECCAB3142E393F2500BA1C73 /* PingLogger.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,7 +93,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ECCAB3102E393EDF00BA1C73 /* PingLogger.framework in Frameworks */,
 				EC23D5872E2FD12100C43D42 /* PingDeviceId.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -101,6 +103,7 @@
 		EC23D5732E2FD12100C43D42 = {
 			isa = PBXGroup;
 			children = (
+				A53A9B482F1983CA000E2F2C /* README.md */,
 				ECCAB39D2E3B5FBC00BA1C73 /* DeviceId */,
 				ECCAB3A22E3B5FEB00BA1C73 /* DeviceIdTests */,
 				ECCAB30E2E393EDF00BA1C73 /* Frameworks */,
@@ -120,9 +123,8 @@
 		ECCAB30E2E393EDF00BA1C73 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A5LOG0002F0100000000001 /* PingLogger.framework */,
 				ECCAB3172E393F2F00BA1C73 /* PingStorage.framework */,
-				ECCAB3132E393F2500BA1C73 /* PingLogger.framework */,
-				ECCAB30F2E393EDF00BA1C73 /* PingLogger.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -130,12 +132,12 @@
 		ECCAB39D2E3B5FBC00BA1C73 /* DeviceId */ = {
 			isa = PBXGroup;
 			children = (
+				ECCAB39C2E3B5FBC00BA1C73 /* PrivacyInfo.xcprivacy */,
 				EC92D44C2F1663900083CCF3 /* LegacyDeviceIdentifier.swift */,
 				ECCAB39A2E3B5FBC00BA1C73 /* DeviceId.h */,
 				ECCAB39B2E3B5FBC00BA1C73 /* DeviceIdentifier.swift */,
 				ECCAB3AF2E3BA1A000BA1C73 /* DefaultDeviceIdentifier.swift */,
 				ECCAB3B12E3BA20000BA1C73 /* UUIDDeviceIdentifier.swift */,
-				ECCAB39C2E3B5FBC00BA1C73 /* PrivacyInfo.xcprivacy */,
 			);
 			path = DeviceId;
 			sourceTree = "<group>";

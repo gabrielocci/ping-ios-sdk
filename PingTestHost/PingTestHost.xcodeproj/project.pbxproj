@@ -42,7 +42,6 @@
 		A54BF46D2BF2E33C00CD24D4 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A54BF46C2BF2E33C00CD24D4 /* ViewController.swift */; };
 		A54BF4702BF2E33C00CD24D4 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = A54BF46F2BF2E33C00CD24D4 /* Base */; };
 		A54BF4722BF2E34000CD24D4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A54BF4712BF2E34000CD24D4 /* Assets.xcassets */; };
-		A54BF4752BF2E34000CD24D4 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = A54BF4742BF2E34000CD24D4 /* Base */; };
 		A567428A2EE34EE6009D29B9 /* PingCommons.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A56742892EE34EE6009D29B9 /* PingCommons.framework */; };
 		A567428B2EE34EE6009D29B9 /* PingCommons.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A56742892EE34EE6009D29B9 /* PingCommons.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EC2E0D8F2DE60C42000CC0E2 /* PingExternalIdPApple.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC2E0D8E2DE60C42000CC0E2 /* PingExternalIdPApple.framework */; };
@@ -300,7 +299,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 1530;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					A54BF4642BF2E33C00CD24D4 = {
 						CreatedOnToolsVersion = 15.3;
@@ -333,7 +332,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A54BF4722BF2E34000CD24D4 /* Assets.xcassets in Resources */,
-				A54BF4752BF2E34000CD24D4 /* Base in Resources */,
 				A54BF4702BF2E33C00CD24D4 /* Base in Resources */,
 				EC93DEC72EBA08BB0014726E /* PingTestHost.xctestplan in Resources */,
 			);

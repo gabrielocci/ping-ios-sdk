@@ -153,7 +153,7 @@ public final class IdpCallback: AbstractCallback, JourneyAware, RequestIntercept
                 return newRequest
             }
             for (key, value) in additionalParameters {
-                newRequest.parameter(name: key, value: value)
+                newRequest.setParameter(name: key, value: value)
             }
             return newRequest
         }
