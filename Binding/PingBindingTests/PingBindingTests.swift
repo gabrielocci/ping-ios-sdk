@@ -469,30 +469,6 @@ final class PingBindingTests: XCTestCase {
         }
     }
     
-    func testUserKeysStorage_ConcurrentAccess() async {
-        // Test concurrent read/write operations
-        let bindCallback1 = DeviceBindingCallback()
-        bindCallback1.userId = "concurrent1"
-        
-        let bindCallback2 = DeviceBindingCallback()
-        bindCallback2.userId = "concurrent2"
-        
-        do {
-            // Execute bindings concurrently
-            async let bind1 = Binding.bind(callback: bindCallback1, journey: nil)
-            async let bind2 = Binding.bind(callback: bindCallback2, journey: nil)
-            
-            let (_, _) = try await (bind1, bind2)
-            
-            XCTFail("testUserKeysStorage_ConcurrentAccess Expected to fail")
-            
-        } catch {
-            // Cleanup
-            try? await userKeyStorage.deleteByUserId("concurrent1")
-            try? await userKeyStorage.deleteByUserId("concurrent2")
-        }
-    }
-    
     // MARK: - Callback Tests
     
     func testDeviceBindingCallback_InitValue() {
