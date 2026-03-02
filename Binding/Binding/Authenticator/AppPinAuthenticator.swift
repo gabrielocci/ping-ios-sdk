@@ -1,3 +1,14 @@
+//
+//  AppPinAuthenticator.swift
+//  PingBinding
+//
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
+//
+//  This software may be modified and distributed under the terms
+//  of the MIT license. See the LICENSE file for details.
+//
+
+
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -61,8 +72,9 @@ public class AppPinAuthenticator: DefaultDeviceAuthenticator {
             let success = context.setCredential(pinData, type: .applicationPassword)
             
             if !success {
-                // The call succeeded but returned false (e.g., credential could not be set)
-                return .failure(DeviceBindingError.deviceNotSupported)
+                // The credential could not be set on this context; treat as an authentication
+                // failure so it maps to the "Abort" client error (not "Unsupported").
+                return .failure(DeviceBindingError.authenticationFailed)
             }
             
             

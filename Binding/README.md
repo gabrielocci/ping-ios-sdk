@@ -56,9 +56,8 @@ PingBinding has the following dependencies which will be automatically installed
 | Dependency | Version | Description |
 |------------|---------|-------------|
 | `PingOrchestrate` | ~> 1.3.1 | Core orchestration framework |
-| `PingOidc` | ~> 1.3.1 | OIDC authentication support |
-| `PingJourney` | ~> 1.3.1 | Journey-based authentication flow management |
-| `PingMfaCommons` | ~> 1.3.1 | Common MFA utilities including JWT signing |
+| `PingJourneyPlugin` | ~> 1.3.1 | Journey-based authentication flow management |
+| `PingCommons` | ~> 1.3.1 | Common utilities including JWT signing |
 | `PingStorage` | ~> 1.3.1 | Secure storage capabilities |
 | `PingLogger` | ~> 1.3.1 | Logging framework |
 
@@ -66,7 +65,7 @@ These dependencies provide the foundation for device binding operations, includi
 
 ## Migration from Legacy SDK
 
-The PingBinding Module includes automatic migration capabilities to seamlessly upgrade from legacy SDK versions (prior to 1.3.0) to the new storage format. This ensures that existing device bindings and user keys are preserved when upgrading your application.
+The PingBinding Module includes automatic migration capabilities to seamlessly upgrade from legacy SDK ([forgerock-ios-sdk](https://github.com/ForgeRock/forgerock-ios-sdk)) to the new storage format. This ensures that existing device bindings and user keys are preserved when upgrading your application.
 
 ### What Gets Migrated
 
@@ -288,7 +287,7 @@ await BindingMigration.resetMigrationState()
 
 ### Callback Registration
 
-PingBinding callbacks (`DeviceBindingCallback` and `DeviceSigningVerifierCallback`) are **automatically registered** when you use the Journey framework. The callbacks are registered when `CallbackRegistry.shared.registerDefaultCallbacks()` is called internally by the Journey initialization.
+PingBinding callbacks (`DeviceBindingCallback` and `DeviceSigningVerifierCallback`) are **automatically registered** when you use the Journey framework. The callbacks are registered when `Journey.createJourney()` is called to initialize a Journey.
 
 **No explicit registration is required** in your application code when using Journey flows.
 
