@@ -2,7 +2,7 @@
 //  PushKeychainStorage.swift
 //  PingPush
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -193,6 +193,43 @@ public final class PushKeychainStorage: PushStorage, @unchecked Sendable {
         } catch {
             logger?.e("Failed to clear push credentials", error: error)
             throw PushStorageError.storageFailure("Failed to clear credentials", error)
+        }
+    }
+
+    /// Retrieve a push credential by issuer and account name.
+    /// - Parameters:
+    ///   - issuer: The issuer of the credential.
+    ///   - accountName: The account name of the credential.
+    /// - Returns: The credential if found, nil otherwise.
+    /// - Throws: `PushStorageError.storageFailure` if keychain operations fail.
+   public func getCredentialByIssuerAndAccount(issuer: String, accountName: String) async throws -> PushCredential? {
+        logger?.i("Checking for credential with issuer: \(issuer), account: \(accountName)")
+        
+        do {
+            let items = try loadAllKeychainItems(service: credentialService)
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            for (_, data) in items {
+                do {
+                    let credential = try decoder.decode(PushCredential.self, from: data)
+                    // Check if issuer and accountName match (case-sensitive)
+                    if credential.issuer == issuer && credential.accountName == accountName {
+                        logger?.i("Found credential with issuer: \(issuer), account: \(accountName)")
+                        return credential
+                    }
+                } catch {
+                    logger?.w("Failed to decode credential, skipping", error: error)
+                }
+            }
+            
+            // No matching credential found
+            logger?.i("No credential found with issuer: \(issuer), account: \(accountName)")
+            return nil
+        } catch {
+            logger?.e("Failed to retrieve credential by issuer and account", error: error)
+            throw PushStorageError.storageFailure("Failed to retrieve credential", error)
         }
     }
 

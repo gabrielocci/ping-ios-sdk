@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  PingExample
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -75,16 +75,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotifi
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("APNs Device Token: \(tokenString)")
+        print("Received device token: \(tokenString)")
 
         // Store device token in PushClient
         Task {
             do {
                 let client = try await getInitializedPushClient()
-                _ = try await client.setDeviceToken(tokenString)
-                print("Device token registered with PushClient")
+                let success = try await client.setDeviceToken(tokenString)
+                if success {
+                    print("Device token update completed successfully")
+                } else {
+                    print("Device token update completed with some failures - check logs for details")
+                }
+            } catch let error as NSError where error.domain == "AppDelegate" {
+                print("Failed to update device token: PushClient not yet initialized. Will retry when client is ready.")
             } catch {
-                print("Failed to register device token: \(error.localizedDescription)")
+                print("Failed to update device token: \(error.localizedDescription)")
             }
         }
     }

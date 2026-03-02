@@ -2,7 +2,7 @@
 //  PushStorage.swift
 //  PingPush
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -44,6 +44,15 @@ public protocol PushStorage: Sendable {
     /// Clear all Push credentials from the storage.
     /// - Throws: `PushStorageError.storageFailure` if the credentials cannot be cleared.
     func clearPushCredentials() async throws
+
+    /// Retrieve a push credential by issuer and account name.
+    /// Used for duplicate detection during credential registration.
+    /// - Parameters:
+    ///   - issuer: The issuer of the credential.
+    ///   - accountName: The account name of the credential.
+    /// - Returns: The Push credential if found, nil otherwise.
+    /// - Throws: `PushStorageError.storageFailure` if the credential cannot be retrieved.
+    func getCredentialByIssuerAndAccount(issuer: String, accountName: String) async throws -> PushCredential?
 
     // MARK: - Notification Operations
 
