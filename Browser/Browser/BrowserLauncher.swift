@@ -27,10 +27,21 @@ public enum BrowserType: Int, Sendable {
 }
 
 /// BrowserError enum to specify the error that may occur during external user-agent process
-public enum BrowserError: Error, Sendable {
+public enum BrowserError: Error, LocalizedError, Sendable {
     case externalUserAgentFailure
     case externalUserAgentAuthenticationInProgress
     case externalUserAgentCancelled
+
+    public var errorDescription: String? {
+        switch self {
+        case .externalUserAgentFailure:
+            return "The external user agent failed to launch or complete authentication."
+        case .externalUserAgentAuthenticationInProgress:
+            return "An authentication session is already in progress."
+        case .externalUserAgentCancelled:
+            return "The authentication was cancelled by the user."
+        }
+    }
 }
 
 /// BrowserMode enum to specify the mode of the browser
@@ -47,7 +58,7 @@ public enum BrowserMode: Sendable {
 public protocol BrowserLauncherProtocol: Sendable {
     var isInProgress: Bool { get }
     func launch(url: URL, customParams: [String: String]?,
-                browserType: BrowserType, browserMode: BrowserMode, callbackURLScheme: String) async throws -> URL
+                browserType: BrowserType, browserMode: BrowserMode, callbackURLScheme: String, logger: Logger) async throws -> URL
     func reset()
     func handleAppActivation()
 }
@@ -148,14 +159,9 @@ public final class BrowserLauncher: NSObject, BrowserLauncherProtocol {
     ///   - callbackURLScheme: The callbackURLScheme to be used for returning to the app. Used in ASWebAuthenticationSession modes
     ///   - Returns: URL of the external user-agent
     ///   - Throws: BrowserError
-    public func launch(url: URL,
-                       customParams: [String: String]? = nil,
-                       browserType: BrowserType = .authSession,
-                       browserMode: BrowserMode = .login,
-                       callbackURLScheme: String) async throws -> URL {
-        
-        // Refresh logger
-        logger = LogManager.logger
+    public func launch(url: URL, customParams: [String: String]? = nil,
+                       browserType: BrowserType = .authSession, browserMode: BrowserMode = .login, callbackURLScheme: String, logger: Logger = LogManager.logger) async throws -> URL {
+        self.logger = logger
         
         guard case .idle = state else {
             logger.e("Attempted to launch browser while another session is in progress", error: nil)

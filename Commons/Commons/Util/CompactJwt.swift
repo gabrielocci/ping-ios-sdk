@@ -2,7 +2,7 @@
 //  JwtUtils.swift
 //  PingCommons
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -14,7 +14,7 @@ import Security
 
 // MARK: - SecKey to JWK Conversion
 
-enum SecKeyToJWKError: Error, LocalizedError {
+enum SecKeyToJWKError: Error, LocalizedError, Sendable {
     case notECKey
     case externalRepresentationFailed
     case invalidECKeyDataFormat
@@ -42,10 +42,18 @@ public final class CompactJwt: Sendable {
 
     // MARK: - ASN.1 Parsing Helpers
 
-    enum ASN1Error: Error {
+    enum ASN1Error: Error, LocalizedError, Sendable {
         case invalidFormat
         case unexpectedTag
         case lengthMismatch
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidFormat: return "ASN.1 data has an invalid format."
+            case .unexpectedTag: return "ASN.1 parser encountered an unexpected tag."
+            case .lengthMismatch: return "ASN.1 length field does not match available data."
+            }
+        }
     }
 
     struct ASN1 {

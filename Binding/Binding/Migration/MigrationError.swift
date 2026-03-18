@@ -2,7 +2,7 @@
 //  MigrationError.swift
 //  PingBinding
 //
-//  Copyright (c) 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2025 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -11,7 +11,7 @@
 import Foundation
 
 /// Errors that can occur during device binding migration.
-public enum MigrationError: LocalizedError {
+public enum MigrationError: LocalizedError, Sendable {
     /// Failed to read legacy user keys from keychain
     case failedToReadLegacyKeys(Error)
     
