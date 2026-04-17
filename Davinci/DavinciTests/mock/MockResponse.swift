@@ -2,7 +2,7 @@
 //  MockResponse.swift
 //  DavinciTests
 //
-//  Copyright (c) 2024 - 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2024 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -506,6 +506,28 @@ struct MockResponse {
           }
         }
     """.data(using: .utf8)!
+    }
+    
+    static var rewindStateToLastRenderedUIResponse: Data {
+        return """
+        {
+            "eventName": "rewindStateToLastRenderedUI",
+            "success": true,
+            "id": "fxopi4maps",
+            "interactionId": "172e9100-9e72-456a-b850-ea3d698f06bb"
+        }
+        """.data(using: .utf8)!
+    }
+    
+    static var rewindStateToSpecificRenderedUIResponse: Data {
+        return """
+        {
+            "eventName": "rewindStateToSpecificRenderedUI",
+            "success": true,
+            "id": "fxopi4maps",
+            "interactionId": "172e9100-9e72-456a-b850-ea3d698f06bb"
+        }
+        """.data(using: .utf8)!
     }
     
 }

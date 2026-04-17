@@ -1,8 +1,8 @@
 //
 //  Constants.swift
-//  PingDavinci
+//  PingDavinciPlugin
 //
-//  Copyright (c) 2024 - 2025 Ping Identity Corporation. All rights reserved.
+//  Copyright (c) 2024 - 2026 Ping Identity Corporation. All rights reserved.
 //
 //  This software may be modified and distributed under the terms
 //  of the MIT license. See the LICENSE file for details.
@@ -30,6 +30,7 @@ public enum Constants {
     public static let category = "category"
     public static let next = "next"
     public static let href = "href"
+    public static let _self = "self"
     public static let _links = "_links"
     public static let message = "message"
     public static let status = "status"
@@ -90,4 +91,26 @@ public enum Constants {
     public static let phoneNumber = "phoneNumber"
     public static let defaultCountryCode = "defaultCountryCode"
     public static let validatePhoneNumber = "validatePhoneNumber"
+    
+    // MARK: - Polling & QR Code
+    public static let POLLING = "POLLING"
+    public static let QR_CODE = "QR_CODE"
+    public static let pollInterval = "pollInterval"
+    public static let pollRetries = "pollRetries"
+    public static let pollChallengeStatus = "pollChallengeStatus"
+    public static let challenge = "challenge"
+    public static let isChallengeComplete = "isChallengeComplete"
+    public static let rewindStateToLastRenderedUI = "rewindStateToLastRenderedUI"
+    public static let rewindStateToSpecificRenderedUI = "rewindStateToSpecificRenderedUI"
+    public static let interactionId = "interactionId"
+    public static let fallbackText = "fallbackText"
+    public static let base64Separator = "base64,"
+    public static let pollingEventType = "polling"
+    public static let pollingValueContinue = "continue"
+    public static let pollingValueTimedOut = "timedOut"
+    public static let pollingValueExpired = "expired"
+    public static let pollingValueError = "error"
+    public static let davinciConnectionsPathSegment = "/davinci/connections"
+    public static let challengeStatusPathPrefix = "/davinci/user/credentials/challenge/"
+    public static let challengeStatusPathSuffix = "/status"
 }
