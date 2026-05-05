@@ -86,6 +86,8 @@ struct ContinueNodeView: View {
                     FidoRegistrationCollectorView(collector: fidoRegistrationCollector, onNext: { onNext(true) })
                 case let fidoAuthenticationCollector as FidoAuthenticationCollector:
                     FidoAuthenticationCollectorView(collector: fidoAuthenticationCollector, onNext: { onNext(true) })
+                case let booleanCollector as BooleanCollector:
+                    BooleanCollectorView(field: booleanCollector, onNodeUpdated: onNodeUpdated)
                 case let readOnlyTextCollector as ReadOnlyTextCollector:
                     ReadOnlyTextView(field: readOnlyTextCollector)
                 default:

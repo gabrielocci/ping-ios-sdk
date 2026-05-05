@@ -117,6 +117,11 @@ public enum Constants {
     public static let challengeStatusPathPrefix = "/davinci/user/credentials/challenge/"
     public static let challengeStatusPathSuffix = "/status"
     
+    //BooleanCollector
+    public static let BOOLEAN = "BOOLEAN"
+    public static let appearance = "appearance"
+    public static let richContent = "richContent"
+    public static let replacements = "replacements"
     // MARK: - Agreement
     public static let READ_ONLY_TEXT = "READ_ONLY_TEXT"
     public static let title = "title"

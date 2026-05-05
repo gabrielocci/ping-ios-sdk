@@ -94,6 +94,11 @@ extension DaVinci {
             await CollectorFactory.shared.register(type: Constants.QR_CODE, closure: { json in
                 return QRCodeCollector(with: json)
             })
+            // Registers a Collector for Constants.BOOLEAN `inputType`. It can have different `type`s
+            // This is similar to Constants.ACTION, Constants.SINGLE_SELECT, Constants.MULTI_SELECT etc.
+            await CollectorFactory.shared.register(type: Constants.BOOLEAN, closure: { json in
+                return BooleanCollector(with: json)
+            })
             await CollectorFactory.shared.register(type: Constants.READ_ONLY_TEXT, closure: { json in
                 return ReadOnlyTextCollector(with: json)
             })
