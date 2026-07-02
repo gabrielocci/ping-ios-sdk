@@ -51,6 +51,7 @@ let package = Package(
         
         // MARK: - Utilities
         .library(name: "PingBinding", targets: ["PingBinding"])
+        .library(name: "PingRecognize", targets: ["PingRecognize"]),
     ],
     dependencies: [
         // External dependencies
@@ -316,5 +317,21 @@ let package = Package(
             exclude: ["Binding.h"],
             resources: [.copy("PrivacyInfo.xcprivacy")]
         )
+
+        .target(
+            name: "PingRecognize",
+            dependencies: [
+                "PingDavinciPlugin",
+                "PingJourneyPlugin",
+            ],
+            path: "Recognize/Recognize",
+            exclude: ["Recognize.h"],
+            resources: [.copy("PrivacyInfo.xcprivacy")]
+        ),
+.testTarget(
+    name: "RecognizeTests",
+    dependencies: ["PingRecognize"],
+    path: "Recognize/RecognizeTests"
+),
     ]
 )
