@@ -186,6 +186,8 @@
 		FAE66EFD02A8526178953F13 /* AuthMigrationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BE27407BC6A20DE66B3B585 /* AuthMigrationViewModel.swift */; };
 		SDKS42450002000000000001 /* RichTextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = SDKS42450002000000000000 /* RichTextBuilder.swift */; };
 		SDKS50660006000000000001 /* Configs in Resources */ = {isa = PBXBuildFile; fileRef = A50FE2672FCE78D20010DC0D /* Configs */; };
+		1BEF0398082085F24F883D41 /* PingRecognize.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53B74567F879D1C1EA250FC5 /* PingRecognize.framework */; };
+		55C9F57A2FAB76386795C574 /* PingRecognize.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 53B74567F879D1C1EA250FC5 /* PingRecognize.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -581,6 +583,20 @@
 			remoteGlobalIDString = EC23D5862E2FD12100C43D42;
 			remoteInfo = DeviceIdTests;
 		};
+		D26BF805070AC38678DAD96B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AB83166B01BCDB2ECA2BB6EA;
+			remoteInfo = PingRecognize;
+		};
+		9DA3EB15F747B11307B4C701 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1747A8CDA0A1838CEDF588C9;
+			remoteInfo = RecognizeTests;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -618,6 +634,7 @@
 				A51FF3B32E0E11DC0094430B /* PingProtect.framework in Embed Frameworks */,
 				1B2933CE2E7DF429004D1D38 /* PingOath.framework in Embed Frameworks */,
 				ECCAB36A2E3A6C3300BA1C73 /* PingDeviceId.framework in Embed Frameworks */,
+				55C9F57A2FAB76386795C574 /* PingRecognize.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -796,6 +813,7 @@
 		ECF7EB852E464ED8002A5E8E /* IdpCallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdpCallbackView.swift; sourceTree = "<group>"; };
 		ECF7EB872E464F2C002A5E8E /* SelectIdpCallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectIdpCallbackView.swift; sourceTree = "<group>"; };
 		SDKS42450002000000000000 /* RichTextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextBuilder.swift; sourceTree = "<group>"; };
+		5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Recognize.xcodeproj; path = ../../Recognize/Recognize.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -832,6 +850,7 @@
 				ECCAB3692E3A6C3300BA1C73 /* PingDeviceId.framework in Frameworks */,
 				A5560CA62CFE4EDA0076CA8D /* PingOrchestrate.framework in Frameworks */,
 				A58CFBD02EB0046B007C4A31 /* PingReCaptchaEnterprise.framework in Frameworks */,
+				1BEF0398082085F24F883D41 /* PingRecognize.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -899,6 +918,7 @@
 			isa = PBXGroup;
 			children = (
 				1BB4C8EF2F7EFC9000C1667E /* AuthMigration.xcodeproj */,
+				5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */,
 				A56741BC2EE1EBFD009D29B9 /* Commons.xcodeproj */,
 				A55A25022ED4A49100D8820C /* DeviceClient.xcodeproj */,
 				1B7A9A902ED52F6500989A55 /* Network.xcodeproj */,
@@ -1337,6 +1357,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		C9E6CFCF9DC685A634BE0D98 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				53B74567F879D1C1EA250FC5 /* PingRecognize.framework */,
+				C69BD2B4C1C3D678B0454521 /* RecognizeTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1555,6 +1584,10 @@
 				{
 					ProductGroup = EC59E3032E7D7DE300A91E66 /* Products */;
 					ProjectRef = EC59E3002E7D7DE300A91E66 /* TamperDetector.xcodeproj */;
+				},
+				{
+					ProductGroup = C9E6CFCF9DC685A634BE0D98 /* Products */;
+					ProjectRef = 5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -1944,6 +1977,20 @@
 			fileType = wrapper.cfbundle;
 			path = DeviceIdTests.xctest;
 			remoteRef = ECCAB3AD2E3B600B00BA1C73 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		53B74567F879D1C1EA250FC5 /* PingRecognize.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = PingRecognize.framework;
+			remoteRef = D26BF805070AC38678DAD96B /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C69BD2B4C1C3D678B0454521 /* RecognizeTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RecognizeTests.xctest;
+			remoteRef = 9DA3EB15F747B11307B4C701 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
