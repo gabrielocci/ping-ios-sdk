@@ -234,8 +234,8 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
 
     func testInitValueGenerateClientState() {
         let callback = RecognizeCallback()
-        callback.initValue(name: JourneyConstants.generateClientState, value: "BACKUP")
-        XCTAssertEqual(callback.generateClientState, "BACKUP")
+        callback.initValue(name: JourneyConstants.generateClientState, value: "true")
+        XCTAssertEqual(callback.generateClientState, "true")
     }
 
     func testInitValueClientState() {
@@ -300,7 +300,8 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
     func testInputFieldKeyConstants() {
         XCTAssertEqual(JourneyConstants.inputSignedJwt, "IDToken1signedJwt")
         XCTAssertEqual(JourneyConstants.inputClientState, "IDToken1clientState")
-        XCTAssertEqual(JourneyConstants.inputKeylessId, "IDToken1keylessId")
+        XCTAssertEqual(JourneyConstants.inputRecognizeId, "IDToken1recognizeId")
+        XCTAssertEqual(JourneyConstants.inputDevicePublicSigningKey, "IDToken1devicePublicSigningKey")
         XCTAssertEqual(JourneyConstants.inputClientError, "IDToken1clientError")
         XCTAssertEqual(JourneyConstants.inputClientErrorCode, "IDToken1clientErrorCode")
     }

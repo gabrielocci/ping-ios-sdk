@@ -143,7 +143,7 @@ The callback automatically maps every server-supplied field to `BiomEnrollConfig
 | `mobileSDKOptions.showFailureFeedback`           | `showFailureFeedback`                 |
 | `mobileSDKOptions.showInstructionsScreen`        | `showInstructionsScreen`              |
 
-On success, `IDToken1keylessId`, `IDToken1signedJwt`, and `IDToken1clientState` are automatically populated and submitted to the server.
+On success, `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState` are automatically populated and submitted to the server.
 
 ---
 
