@@ -8,5 +8,19 @@
 //  of the MIT license. See the LICENSE file for details.
 //
 
-/// PingRecognize module placeholder. Replace this with your real implementation.
-public enum Recognize {}
+import Foundation
+
+/// Custom error type for Recognize SDK exceptions
+public struct RecognizeError: Error, LocalizedError, Sendable {
+    public let message: String
+
+    /// A localized description of the error.
+    public var errorDescription: String? {
+        return message
+    }
+
+    /// Initializes a new instance of `RecognizeError` with a given message.
+    public init(_ message: String) {
+        self.message = message
+    }
+}

@@ -24,6 +24,7 @@ Pod::Spec.new do |s|
 
   s.module_name   = 'PingRecognize'
   s.swift_versions = ['5.0', '5.1', '6.0']
+  s.static_framework = true
 
   s.ios.deployment_target = '16.0'
 
@@ -35,4 +36,5 @@ Pod::Spec.new do |s|
 
   s.ios.dependency 'PingDavinciPlugin', '~> 2.0.0'
   s.ios.dependency 'PingJourneyPlugin', '~> 2.0.0'
+  s.ios.dependency 'KeylessSDK', '~> 5.8'
 end
