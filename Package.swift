@@ -50,7 +50,7 @@ let package = Package(
         .library(name: "PingAuthMigration", targets: ["PingAuthMigration"]),
         
         // MARK: - Utilities
-        .library(name: "PingBinding", targets: ["PingBinding"])
+        .library(name: "PingBinding", targets: ["PingBinding"]),
         .library(name: "PingRecognize", targets: ["PingRecognize"]),
     ],
     dependencies: [
@@ -58,7 +58,8 @@ let package = Package(
         .package(url: "https://github.com/pingidentity/pingone-signals-sdk-ios.git", "5.4.0"..<"5.5.0"),
         .package(url: "https://github.com/facebook/facebook-ios-sdk.git", "16.3.1"..<"16.4.0"),
         .package(url: "https://github.com/google/GoogleSignIn-iOS.git", exact: "9.0.0"),
-        .package(url: "https://github.com/GoogleCloudPlatform/recaptcha-enterprise-mobile-sdk.git", "18.8.1"..<"18.9.0")
+        .package(url: "https://github.com/GoogleCloudPlatform/recaptcha-enterprise-mobile-sdk.git", "18.8.1"..<"18.9.0"),
+        .package(id: "keyless.mobile-sdk", from: "5.7.3")
     ],
     targets: [
         // MARK: - Foundation Targets (No dependencies)
@@ -316,13 +317,14 @@ let package = Package(
             path: "Binding/Binding",
             exclude: ["Binding.h"],
             resources: [.copy("PrivacyInfo.xcprivacy")]
-        )
+        ),
 
         .target(
             name: "PingRecognize",
             dependencies: [
                 "PingDavinciPlugin",
                 "PingJourneyPlugin",
+                .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
             ],
             path: "Recognize/Recognize",
             exclude: ["Recognize.h"],
