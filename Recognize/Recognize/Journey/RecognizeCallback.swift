@@ -144,7 +144,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// Customer-supplied transaction data to be signed by the SDK.
     private(set) public var transactionData: String = ""
 
-    /// The client-state generation mode supplied by the server (e.g. `"BACKUP"`).
+    /// The `generateClientState` bool string supplied by the server (`"true"` or `"false"`).
     private(set) public var generateClientState: String = ""
 
     /// An existing client-state payload provided by the server during enrollment restore.
@@ -232,9 +232,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         _ = input(value, forKey: JourneyConstants.inputClientState)
     }
 
-    /// Sets the Keyless user ID into the `IDToken1keylessId` input field.
-    public func setKeylessId(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputKeylessId)
+    /// Sets the Recognize user ID into the `IDToken1recognizeId` input field.
+    public func setRecognizeId(_ value: String) {
+        _ = input(value, forKey: JourneyConstants.inputRecognizeId)
+    }
+
+    /// Sets the device public signing key into the `IDToken1devicePublicSigningKey` input field.
+    public func setDevicePublicSigningKey(_ value: String) {
+        _ = input(value, forKey: JourneyConstants.inputDevicePublicSigningKey)
     }
 
     /// Sets a client error code into the `IDToken1clientErrorCode` input field.
@@ -244,9 +249,18 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
     // MARK: - Keyless SDK Wrappers
 
+    /// Returns a `JwtSigningInfo` when `transactionData` is non-empty; `nil` otherwise.
+    private func jwtSigningInfo(from transactionData: String) -> JwtSigningInfo? {
+        transactionData.isEmpty ? nil : JwtSigningInfo(claimTransactionData: transactionData)
+    }
+
     /// Configures and initialises the Keyless SDK with the server-supplied credentials.
     internal func configure() async throws {
-        let setupConfig = SetupConfig(apiKey: apiKey, hosts: [host])
+        let setupConfig = SetupConfig(
+            apiKey: apiKey,
+            hosts: [host],
+            numberOfEnrollmentCircuits: mobileSDKOptions.numberOfEnrollmentCircuits
+        )
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.configure(setupConfiguration: setupConfig) { error in
                 if let error = error {
@@ -260,7 +274,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
     /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
     ///
-    /// On success, populates `IDToken1keylessId`, `IDToken1signedJwt`, and `IDToken1clientState`.
+    /// On success, populates `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState`.
     internal func enroll(options: RecognizeMobileSDKOptions) async throws {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
@@ -273,7 +287,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             clientState: clientState.isEmpty ? nil : clientState,
             customSecret: options.customSecret.isEmpty ? nil : options.customSecret,
             operationInfo: operationInfo,
-            jwtSigningInfo: nil, // TODO: - TBD
+            jwtSigningInfo: jwtSigningInfo(from: transactionData),
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
             livenessEnvironmentAware: options.livenessEnvironmentAware,
             cameraDelaySeconds: options.cameraDelaySeconds,
@@ -282,14 +296,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             showInstructionsScreen: options.showInstructionsScreen,
             showSuccessFeedback: options.showSuccessFeedback,
             showFailureFeedback: options.showFailureFeedback,
-            presentationStyle: .overlay // Server always sends OVERLAY for enroll — TBD
+            presentationStyle: .overlay
         )
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.enroll(configuration: enrollConfig) { result in
                 switch result {
                 case .success(let enrollmentResult):
-                    if let keylessId = enrollmentResult.keylessId { self.setKeylessId(keylessId) }
+                    if let keylessId = enrollmentResult.keylessId { self.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self.setClientState(state) }
                     continuation.resume()
@@ -306,7 +320,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
     /// Performs the biometric authentication operation using `BiomAuthConfig`.
     ///
-    /// On success, populates `IDToken1signedJwt` and `IDToken1clientState` from the response.
+    /// On success, populates `IDToken1signedJwt`, `IDToken1clientState`, and (when available)
+    /// `IDToken1devicePublicSigningKey`.
     internal func authenticate(options: RecognizeMobileSDKOptions) async throws {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
@@ -323,8 +338,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             shouldRetrieveAuthenticationFrame: options.shouldRetrieveAuthenticationFrame,
             showSuccessFeedback: options.showSuccessFeedback,
             shouldRemovePin: options.shouldRemovePin,
-            presentationStyle: options.presentationStyle.isEmpty ? nil : Self.authPresentationStyle(from: options.presentationStyle),
-            jwtSigningInfo: nil, // TODO: - TBD
+            presentationStyle: Self.authPresentationStyle(from: options.presentationStyle),
+            jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo
         )
 
@@ -334,6 +349,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                 case .success(let response):
                     if let jwt = response.signedJwt { self.setSignedJwt(jwt) }
                     if let state = response.clientState { self.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self.setDevicePublicSigningKey(key)
+                    }
                     continuation.resume()
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
@@ -360,24 +378,21 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         }
     }
 
-    /// Maps the server `presentationStyle` string (e.g. `"CAMERA_PREVIEW"`) to `Keyless.AuthPresentationStyle`.
+    /// Maps the server `presentationStyle` string (e.g. `"CAMERA_PREVIEW"`) to `PresentationStyle`.
     ///
-    /// Falls back to `nil` for unrecognised values (SDK uses its default).
-    private static func authPresentationStyle(from string: String) -> Keyless.AuthPresentationStyle? {
+    /// Falls back to `.cameraPreview` (the only available case in KeylessSDK) for unrecognised values.
+    private static func authPresentationStyle(from string: String) -> PresentationStyle {
         switch string.uppercased() {
         case "CAMERA_PREVIEW": return .cameraPreview
-        default:               return nil
+        default:               return .cameraPreview
         }
     }
 
-    /// Maps the server `generateClientState` string (e.g. `"BACKUP"`) to `ClientStateType`.
+    /// Maps the server `generateClientState` bool string (`"true"` / `"false"`) to `ClientStateType`.
     ///
-    /// Returns `nil` for empty or unrecognised values.
+    /// `"true"` → `.backup`; any other value → `nil`.
     private static func clientStateType(from string: String) -> ClientStateType? {
-        switch string.uppercased() {
-        case "BACKUP": return .backup
-        default:       return nil
-        }
+        return string == JourneyConstants.boolTrue ? .backup : nil
     }
 
     /// Converts a JSON value to a `[String: String]` dictionary.
@@ -401,8 +416,10 @@ extension JourneyConstants {
     public static let inputSignedJwt = "IDToken1signedJwt"
     /// Input field key for the client state produced by the Keyless SDK.
     public static let inputClientState = "IDToken1clientState"
-    /// Input field key for the Keyless user ID produced during enrollment.
-    public static let inputKeylessId = "IDToken1keylessId"
+    /// Input field key for the Recognize user ID produced during enrollment.
+    public static let inputRecognizeId = "IDToken1recognizeId"
+    /// Input field key for the device public signing key retrieved after authentication.
+    public static let inputDevicePublicSigningKey = "IDToken1devicePublicSigningKey"
     /// Input field key for the client error message.
     public static let inputClientError = "IDToken1clientError"
     /// Input field key for a structured client error code.
