@@ -331,7 +331,10 @@ let package = Package(
         ),
 .testTarget(
     name: "RecognizeTests",
-    dependencies: ["PingRecognize"],
+    dependencies: [
+        "PingRecognize",
+        .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
+    ],
     path: "Recognize/RecognizeTests"
 ),
     ]
