@@ -9,6 +9,7 @@
 //
 
 import XCTest
+import KeylessSDK
 @testable import PingRecognize
 
 // MARK: - RecognizeErrorTests
@@ -38,8 +39,6 @@ final class RecognizeErrorTests: XCTestCase {
 }
 
 // MARK: - RecognizeMobileSDKOptionsTests + RecognizeCallbackConstantsTests
-
-#if canImport(KeylessSDK)
 
 final class RecognizeMobileSDKOptionsTests: XCTestCase {
 
@@ -232,10 +231,22 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         XCTAssertEqual(callback.transactionData, "tx-data-payload")
     }
 
-    func testInitValueGenerateClientState() {
+    func testInitValueGenerateClientStateString() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: "true")
-        XCTAssertEqual(callback.generateClientState, "true")
+        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+    }
+
+    func testInitValueGenerateClientStateBoolTrue() {
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.generateClientState, value: true)
+        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+    }
+
+    func testInitValueGenerateClientStateBoolFalse() {
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.generateClientState, value: false)
+        XCTAssertEqual(callback.generateClientState, "")
     }
 
     func testInitValueClientState() {
@@ -286,6 +297,102 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         // Passing a non-String for a string field — the guard `value as? String` should fail silently.
         callback.initValue(name: JourneyConstants.websocketURL, value: 42)
         XCTAssertEqual(callback.websocketURL, "")
+    }
+}
+
+// MARK: - RecognizeCallbackInputSetterTests
+
+final class RecognizeCallbackInputSetterTests: XCTestCase {
+
+    /// Builds a RecognizeCallback whose `json` already contains an `input` array
+    /// with all six Recognize input keys — mirrors what the Journey framework delivers.
+    private func makeCallback() async -> RecognizeCallback {
+        let inputKeys = [
+            JourneyConstants.inputSignedJwt,
+            JourneyConstants.inputClientState,
+            JourneyConstants.inputRecognizeId,
+            JourneyConstants.inputDevicePublicSigningKey,
+            JourneyConstants.inputClientError,
+            JourneyConstants.inputClientErrorCode
+        ]
+        let inputArray = inputKeys.map { ["name": $0, "value": ""] }
+        let json: [String: Any] = ["input": inputArray, "output": [], "type": "PingOneRecognizeCallback"]
+        let callback = RecognizeCallback()
+        _ = await callback.initialize(with: json)
+        return callback
+    }
+
+    private func inputValue(for key: String, in callback: RecognizeCallback) -> String? {
+        guard let inputs = callback.json["input"] as? [[String: Any]] else { return nil }
+        return inputs.first(where: { ($0["name"] as? String) == key })?["value"] as? String
+    }
+
+    func testSetSignedJwt() async {
+        let callback = await makeCallback()
+        callback.setSignedJwt("jwt-token-xyz")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputSignedJwt, in: callback), "jwt-token-xyz")
+    }
+
+    func testSetClientState() async {
+        let callback = await makeCallback()
+        callback.setClientState("state-blob")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputClientState, in: callback), "state-blob")
+    }
+
+    func testSetRecognizeId() async {
+        let callback = await makeCallback()
+        callback.setRecognizeId("recognize-id-001")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputRecognizeId, in: callback), "recognize-id-001")
+    }
+
+    func testSetDevicePublicSigningKey() async {
+        let callback = await makeCallback()
+        callback.setDevicePublicSigningKey("public-key-pem")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputDevicePublicSigningKey, in: callback), "public-key-pem")
+    }
+
+    func testSetClientErrorCode() async {
+        let callback = await makeCallback()
+        callback.setClientErrorCode("ERR_001")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: callback), "ERR_001")
+    }
+
+    func testErrorHelper() async {
+        let callback = await makeCallback()
+        callback.error("something went wrong")
+        XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: callback), "something went wrong")
+    }
+}
+
+// MARK: - StringDictionaryTests
+
+final class StringDictionaryTests: XCTestCase {
+
+    func testStringStringDictPassthroughUnchanged() {
+        let callback = RecognizeCallback()
+        let input: [String: Any] = ["key1": "value1", "key2": "value2"]
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: input)
+        XCTAssertEqual(callback.mobileSDKOptions.operationInfoId, "")
+        XCTAssertEqual(callback.mobileSDKOptions.livenessConfiguration, "")
+    }
+
+    func testStringAnyDictWithNonStringValuesCoerced() {
+        let callback = RecognizeCallback()
+        let input: [String: Any] = [
+            JourneyConstants.cameraDelaySeconds: 3,
+            JourneyConstants.numberOfEnrollmentCircuits: 7
+        ]
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: input)
+        XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 3)
+        XCTAssertEqual(callback.mobileSDKOptions.numberOfEnrollmentCircuits, 7)
+    }
+
+    func testNonDictValueProducesEmptyOptions() {
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: "not-a-dict")
+        XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 0)
+        XCTAssertEqual(callback.mobileSDKOptions.numberOfEnrollmentCircuits, 5)
+        XCTAssertFalse(callback.mobileSDKOptions.livenessEnvironmentAware)
     }
 }
 
@@ -368,5 +475,3 @@ final class RecognizeOperationTypeTests: XCTestCase {
         XCTAssertNil(RecognizeOperationType(rawValue: "UNKNOWN"))
     }
 }
-
-#endif
