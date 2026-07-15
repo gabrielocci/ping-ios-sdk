@@ -21,6 +21,7 @@
 		CA001005FACE000000000001 /* PingOrchestrate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; };
 		CA001006FACE000000000001 /* PingOrchestrate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CA001007FACE000000000001 /* KeylessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CA001009FACE000000000001 /* KeylessSDK */; };
+		CA001007FACE000000000002 /* KeylessSDK in Frameworks (Tests) */ = {isa = PBXBuildFile; productRef = CA00100AFACE000000000001 /* KeylessSDK */; };
 		CA001003FACE000000000002 /* PingJourneyPlugin.framework in Frameworks (Tests) */ = {isa = PBXBuildFile; fileRef = CA001013FACE000000000001 /* PingJourneyPlugin.framework */; };
 		CA001005FACE000000000002 /* PingOrchestrate.framework in Frameworks (Tests) */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; };
 /* End PBXBuildFile section */
@@ -84,6 +85,7 @@
 				BAB34C51F250C97EBB3F574D /* PingRecognize.framework in Frameworks */,
 				CA001003FACE000000000002 /* PingJourneyPlugin.framework in Frameworks (Tests) */,
 				CA001005FACE000000000002 /* PingOrchestrate.framework in Frameworks (Tests) */,
+				CA001007FACE000000000002 /* KeylessSDK in Frameworks (Tests) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -208,6 +210,9 @@
 				D2129A44827AE88D22A5227C /* PBXTargetDependency */,
 			);
 			name = RecognizeTests;
+			packageProductDependencies = (
+				CA00100AFACE000000000001 /* KeylessSDK */,
+			);
 			productName = RecognizeTests;
 			productReference = 1747A8CDA0A1838CEDF588C9 /* RecognizeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -566,6 +571,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		CA001009FACE000000000001 /* KeylessSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA001008FACE000000000001 /* XCRemoteSwiftPackageReference "keyless.mobile-sdk" */;
+			productName = KeylessSDK;
+		};
+		CA00100AFACE000000000001 /* KeylessSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CA001008FACE000000000001 /* XCRemoteSwiftPackageReference "keyless.mobile-sdk" */;
 			productName = KeylessSDK;
