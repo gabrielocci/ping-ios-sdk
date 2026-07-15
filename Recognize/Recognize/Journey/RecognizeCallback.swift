@@ -59,6 +59,7 @@ public struct RecognizeMobileSDKOptions: Sendable {
     // MARK: Enrollment-only options
 
     /// A custom secret to bind to the enrollment record.
+    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
     public var customSecret: String { raw[JourneyConstants.customSecret] ?? "" }
 
     /// Whether to retrieve the enrollment frame image.
@@ -80,9 +81,11 @@ public struct RecognizeMobileSDKOptions: Sendable {
     // MARK: Authentication-only options
 
     /// Whether to retrieve the stored biometric secret during authentication.
+    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
     public var shouldRetrieveSecret: Bool { raw[JourneyConstants.shouldRetrieveSecret] == JourneyConstants.boolTrue }
 
     /// Whether to delete the stored biometric secret after successful authentication.
+    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
     public var shouldDeleteSecret: Bool { raw[JourneyConstants.shouldDeleteSecret] == JourneyConstants.boolTrue }
 
     /// Whether to retrieve the authentication frame image.
@@ -121,15 +124,19 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     private(set) public var operationType: RecognizeOperationType = .enroll
 
     /// The WebSocket URL for the Recognize authentication service.
+    /// - Note: Provided by the server for context but not forwarded to the Keyless SDK, which manages its own transport layer.
     private(set) public var websocketURL: String = ""
 
     /// The customer name associated with this PingOne Recognize deployment.
+    /// - Note: Provided by the server for context but not forwarded to the Keyless SDK.
     private(set) public var customerName: String = ""
 
     /// The public key used to encrypt images before sending them to the server.
+    /// - Note: Provided by the server for context but not forwarded to the Keyless SDK, which handles image encryption internally.
     private(set) public var imageEncryptionPublicKey: String = ""
 
     /// The ID that identifies the image encryption key.
+    /// - Note: Provided by the server for context but not forwarded to the Keyless SDK.
     private(set) public var imageEncryptionKeyId: String = ""
 
     /// The Recognize node host URL (used to configure the Keyless SDK).
@@ -139,6 +146,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     private(set) public var apiKey: String = ""
 
     /// The username associated with the biometric operation.
+    /// - Note: Provided by the server for context but not forwarded to the Keyless SDK.
+    ///   User identity is bound via `operationInfoExternalUserId` when the server supplies an explicit `operationInfoId`.
     private(set) public var username: String = ""
 
     /// Customer-supplied transaction data to be signed by the SDK.
@@ -202,6 +211,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     public func execute() async -> Result<Void, Error> {
         do {
             try await configure()
+            try Task.checkCancellation()
             switch operationType {
             case .enroll:
                 try await enroll(options: mobileSDKOptions)
@@ -299,16 +309,16 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             showInstructionsScreen: options.showInstructionsScreen,
             showSuccessFeedback: options.showSuccessFeedback,
             showFailureFeedback: options.showFailureFeedback,
-            presentationStyle: .overlay
+            presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            Keyless.enroll(configuration: enrollConfig) { result in
+            Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
-                    if let keylessId = enrollmentResult.keylessId { self.setRecognizeId(keylessId) }
-                    if let jwt = enrollmentResult.signedJwt { self.setSignedJwt(jwt) }
-                    if let state = enrollmentResult.clientState { self.setClientState(state) }
+                    if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
+                    if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
+                    if let state = enrollmentResult.clientState { self?.setClientState(state) }
                     continuation.resume()
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
@@ -347,13 +357,13 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         )
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            Keyless.authenticate(configuration: authConfig) { result in
+            Keyless.authenticate(configuration: authConfig) { [weak self] result in
                 switch result {
                 case .success(let response):
-                    if let jwt = response.signedJwt { self.setSignedJwt(jwt) }
-                    if let state = response.clientState { self.setClientState(state) }
+                    if let jwt = response.signedJwt { self?.setSignedJwt(jwt) }
+                    if let state = response.clientState { self?.setClientState(state) }
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
-                        self.setDevicePublicSigningKey(key)
+                        self?.setDevicePublicSigningKey(key)
                     }
                     continuation.resume()
                 case .failure(let error):
@@ -381,13 +391,23 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         }
     }
 
+    /// Maps the server `presentation` string (e.g. `"OVERLAY"`) to `BiomEnrollConfig.PresentationStyle`.
+    ///
+    /// Falls back to `.overlay` for unrecognised values.
+    private static func enrollPresentationStyle(from string: String) -> BiomEnrollConfig.PresentationStyle {
+        switch string.uppercased() {
+        case "FULL_SCREEN": return .fullScreen
+        default:            return .overlay
+        }
+    }
+
     /// Maps the server `presentationStyle` string (e.g. `"CAMERA_PREVIEW"`) to `PresentationStyle`.
     ///
-    /// Falls back to `.cameraPreview` (the only available case in KeylessSDK) for unrecognised values.
+    /// Falls back to `.cameraPreview` for unrecognised values.
     private static func authPresentationStyle(from string: String) -> PresentationStyle {
         switch string.uppercased() {
-        case "CAMERA_PREVIEW": return .cameraPreview
-        default:               return .cameraPreview
+        case "NO_CAMERA_PREVIEW": return .noCameraPreview
+        default:                  return .cameraPreview
         }
     }
 
