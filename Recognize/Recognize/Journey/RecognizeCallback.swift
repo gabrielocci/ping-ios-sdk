@@ -179,7 +179,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         case JourneyConstants.transactionData:
             if let stringValue = value as? String { self.transactionData = stringValue }
         case JourneyConstants.generateClientState:
-            if let stringValue = value as? String { self.generateClientState = stringValue }
+            if let boolValue = value as? Bool {
+                self.generateClientState = boolValue ? JourneyConstants.boolTrue : ""
+            } else if let stringValue = value as? String {
+                self.generateClientState = stringValue
+            }
         case JourneyConstants.clientState:
             if let stringValue = value as? String { self.clientState = stringValue }
         case JourneyConstants.mobileSDKOptions:
@@ -285,7 +289,6 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
         let enrollConfig = BiomEnrollConfig(
             clientState: clientState.isEmpty ? nil : clientState,
-            customSecret: options.customSecret.isEmpty ? nil : options.customSecret,
             operationInfo: operationInfo,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
@@ -338,9 +341,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             shouldRetrieveAuthenticationFrame: options.shouldRetrieveAuthenticationFrame,
             showSuccessFeedback: options.showSuccessFeedback,
             shouldRemovePin: options.shouldRemovePin,
-            presentationStyle: Self.authPresentationStyle(from: options.presentationStyle),
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
-            operationInfo: operationInfo
+            operationInfo: operationInfo,
+            presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in

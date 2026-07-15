@@ -19,6 +19,7 @@ import PingFido
 import PingReCaptchaEnterprise
 import PingBinding
 import PingCommons
+import PingRecognize
 
 struct JourneyView: View {
     /// The view model that manages the Journey flow logic.
@@ -195,7 +196,8 @@ struct JourneyNodeView: View {
             callback is FidoRegistrationCallback ||
             callback is FidoAuthenticationCallback ||
             callback is DeviceBindingCallback ||
-            callback is DeviceSigningVerifierCallback
+            callback is DeviceSigningVerifierCallback ||
+            callback is RecognizeCallback
         }
     }
     
@@ -282,7 +284,10 @@ struct JourneyNodeView: View {
 
                 case let deviceSigningVerifierCallback as DeviceSigningVerifierCallback:
                     DeviceSigningVerifierCallbackView(callback: deviceSigningVerifierCallback, onNext: onNext)
-                    
+
+                case let recognizeCallback as RecognizeCallback:
+                    RecognizeCallbackView(callback: recognizeCallback, onNext: onNext)
+
                 case _ as HiddenValueCallback:
                     EmptyView()
                     
