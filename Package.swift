@@ -322,7 +322,6 @@ let package = Package(
         .target(
             name: "PingRecognize",
             dependencies: [
-                "PingDavinciPlugin",
                 "PingJourneyPlugin",
                 .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
             ],

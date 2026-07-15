@@ -34,7 +34,6 @@ Pod::Spec.new do |s|
     'Recognize' => [base_dir + '/*.xcprivacy']
   }
 
-  s.ios.dependency 'PingDavinciPlugin', '~> 2.0.0'
   s.ios.dependency 'PingJourneyPlugin', '~> 2.0.0'
   s.ios.dependency 'KeylessSDK', '~> 5.8'
 end
