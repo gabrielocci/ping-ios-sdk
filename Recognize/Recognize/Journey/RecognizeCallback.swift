@@ -54,7 +54,10 @@ public struct RecognizeMobileSDKOptions: Sendable {
     public var cameraDelaySeconds: Int { Int(raw[JourneyConstants.cameraDelaySeconds] ?? JourneyConstants.defaultZero) ?? 0 }
 
     /// Whether to show a success feedback overlay after the operation completes.
-    public var showSuccessFeedback: Bool { raw[JourneyConstants.showSuccessFeedback] == JourneyConstants.boolTrue }
+    ///
+    /// Defaults to `true` to match `DEFAULT_SHOW_SUCCESS_FEEDBACK` in the Keyless SDK.
+    /// Uses `!= boolFalse` so that an absent server value preserves the Keyless default.
+    public var showSuccessFeedback: Bool { raw[JourneyConstants.showSuccessFeedback] != JourneyConstants.boolFalse }
 
     // MARK: Enrollment-only options
 
@@ -67,10 +70,17 @@ public struct RecognizeMobileSDKOptions: Sendable {
     public var shouldRetrieveEnrollmentFrame: Bool { raw[JourneyConstants.shouldRetrieveEnrollmentFrame] == JourneyConstants.boolTrue }
 
     /// Whether to show a failure feedback overlay when enrollment fails.
-    public var showFailureFeedback: Bool { raw[JourneyConstants.showFailureFeedback] == JourneyConstants.boolTrue }
+    ///
+    /// Defaults to `true` to match `DEFAULT_SHOW_FAILURE_FEEDBACK` in the Keyless SDK.
+    /// Uses `!= boolFalse` so that an absent server value preserves the Keyless default.
+    public var showFailureFeedback: Bool { raw[JourneyConstants.showFailureFeedback] != JourneyConstants.boolFalse }
 
     /// Whether to display the instructions screen before the camera activates.
-    public var showInstructionsScreen: Bool { raw[JourneyConstants.showInstructionsScreen] == JourneyConstants.boolTrue }
+    ///
+    /// Defaults to `true` to match `BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN` in the Keyless SDK.
+    /// Uses `!= boolFalse` instead of the usual `== boolTrue` pattern so that an absent server value
+    /// preserves the Keyless default rather than silently disabling the screen.
+    public var showInstructionsScreen: Bool { raw[JourneyConstants.showInstructionsScreen] != JourneyConstants.boolFalse }
 
     /// The UI presentation style for enrollment (e.g. `"OVERLAY"`).
     public var presentation: String { raw[JourneyConstants.presentation] ?? "" }
@@ -459,6 +469,8 @@ extension JourneyConstants {
 
     /// String representation of a `true` boolean as delivered by the server.
     public static let boolTrue = "true"
+    /// String representation of a `false` boolean as delivered by the server.
+    public static let boolFalse = "false"
     /// Default string value for integer fields that default to zero.
     public static let defaultZero = "0"
     /// Default number of enrollment circuits when no value is provided by the server.
