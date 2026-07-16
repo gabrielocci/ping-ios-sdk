@@ -488,47 +488,17 @@ final class RecognizeOperationTypeTests: XCTestCase {
     }
 }
 
-// MARK: - RetrieveSelfieTests
+// MARK: - EnrollWithClientStateTests
 
-final class RetrieveSelfieTests: XCTestCase {
+final class EnrollWithClientStateTests: XCTestCase {
 
-    // MARK: execute() return type carries the selfie slot
+    // MARK: clientState absent — execute() takes the authenticate() branch, not enrollWithClientState
 
-    /// Default call (no argument) returns .success(nil) — no selfie, no crash.
-    /// We verify by inspecting the result shape without calling into the Keyless SDK.
-    func testExecuteDefaultReturnTypeIsOptionalCGImage() {
-        // execute() signature must compile with Result<CGImage?, Error> — verified at build time.
-        // This test confirms the default parameter value is false by checking the method is callable
-        // without arguments and that the return type is Result<CGImage?, Error>.
-        let callback = RecognizeCallback()
-        // We do not call execute() here because it requires a configured Keyless SDK.
-        // The compile-time check below is sufficient: if retrieveSelfie defaulted to a non-Bool
-        // type or the return type changed, this assignment would fail to compile.
-        let _: (Bool) async -> Result<CGImage?, Error> = callback.execute(retrieveSelfie:)
-        let _: () async -> Result<CGImage?, Error> = { await callback.execute() }
-    }
-
-    /// When retrieveSelfie is false, shouldRetrieveEnrollmentFrame must be passed as false
-    /// to BiomEnrollConfig — verified through the enroll() helper directly.
-    /// The selfie slot in the result is nil when retrieveSelfie is false.
-    func testRetrieveSelfieFalsePassesFalseToEnrollConfig() async {
-        // We cannot call enroll() without a configured Keyless SDK, but we can assert that
-        // the parameter threading is correct at the source level. The integration path is:
-        //   execute(retrieveSelfie: false)
-        //     → enroll(options:retrieveSelfie: false)
-        //       → BiomEnrollConfig(shouldRetrieveEnrollmentFrame: false)
-        //       → continuation.resume(returning: nil)   // false ? frame : nil
-        // This is enforced by the implementation and verified in integration tests.
-        //
-        // What we can unit-test: the callback exposes the correct method signature.
-        let callback = RecognizeCallback()
-        let _: (RecognizeMobileSDKOptions, Bool) async throws -> CGImage? = callback.enroll(options:retrieveSelfie:)
-        let _: (RecognizeMobileSDKOptions, Bool) async throws -> CGImage? = callback.authenticate(options:retrieveSelfie:)
-    }
-
-    /// Selfie is excluded from Journey payload — the callback input fields must never
-    /// contain image data regardless of the retrieveSelfie value.
-    func testSelfieNeverWrittenToCallbackInputFields() async {
+    /// When operationType is .authenticate and clientState is empty, execute() must route to
+    /// authenticate() — not enrollWithClientState(). We verify this by inspecting which input
+    /// fields execute() writes: if enrollWithClientState ran it would write recognizeId and
+    /// potentially overwrite clientState, which authenticate() never does.
+    func testClientStateAbsentRoutesToAuthenticateBranch() async {
         let inputKeys = [
             JourneyConstants.inputSignedJwt,
             JourneyConstants.inputClientState,
@@ -538,38 +508,37 @@ final class RetrieveSelfieTests: XCTestCase {
             JourneyConstants.inputClientErrorCode
         ]
         let inputArray = inputKeys.map { ["name": $0, "value": ""] }
+        let outputArray: [[String: Any]] = [
+            ["name": JourneyConstants.operationType, "value": "AUTHENTICATE"]
+        ]
         let json: [String: Any] = [
             "input": inputArray,
-            "output": [],
+            "output": outputArray,
             "type": JourneyConstants.pingOneRecognizeCallback
         ]
         let callback = RecognizeCallback()
         _ = await callback.initialize(with: json)
 
-        // After initialization, no input field should contain image data.
-        // The selfie (CGImage) has no JourneyConstants key and is never passed to input(_:forKey:).
-        guard let inputs = callback.json["input"] as? [[String: Any]] else {
-            XCTFail("input array missing")
-            return
-        }
-        for entry in inputs {
-            let value = entry["value"] as? String ?? ""
-            // None of the defined input keys map to image data.
-            XCTAssertFalse(value.hasPrefix("iVBOR"), "PNG base64 data must not appear in Journey payload")
-            XCTAssertFalse(value.hasPrefix("/9j/"),  "JPEG base64 data must not appear in Journey payload")
-        }
+        // clientState output field is absent — initValue was never called with it.
+        XCTAssertEqual(callback.clientState, "")
+        XCTAssertEqual(callback.operationType, .authenticate)
+
+        // recognizeId input must remain empty — enrollWithClientState would have written it.
+        let inputs = callback.json["input"] as? [[String: Any]]
+        let recognizeIdValue = inputs?.first(where: { ($0["name"] as? String) == JourneyConstants.inputRecognizeId })?["value"] as? String
+        XCTAssertEqual(recognizeIdValue, "")
     }
 
-    // MARK: Paths requiring a live Keyless SDK connection
+    // MARK: Validate + enroll paths require a live Keyless SDK connection.
     //
-    // The following paths cannot be unit-tested without a running Keyless backend because
-    // Keyless.enroll() and Keyless.authenticate() are static functions with no injectable seam.
-    // Integration tests for these paths should be added in a dedicated integration-test target:
+    // The paths below cannot be unit-tested without a running Keyless backend because
+    // Keyless.validateUserDeviceActive() and Keyless.enroll() are static functions with
+    // no injectable seam. Integration tests for these paths should be added in a dedicated
+    // integration-test target once a test environment is available:
     //
-    //   • retrieveSelfie = true, enroll  → shouldRetrieveEnrollmentFrame = true,
-    //                                       result.selfie == enrollmentResult.enrollmentFrame
-    //   • retrieveSelfie = true, auth    → shouldRetrieveAuthenticationFrame = true,
-    //                                       result.selfie == response.authenticationFrame
-    //   • retrieveSelfie = true, SDK returns nil frame → result.selfie == nil (no crash)
-    //   • retrieveSelfie = false         → result.selfie == nil regardless of SDK frame availability
+    //   • clientState present + enrolled  → validateUserDeviceActive() nil, enroll() called
+    //   • clientState present + not enrolled → validateUserDeviceActive() returns .userNotEnrolled,
+    //                                          enroll() NOT called, no error thrown
+    //   • validateUserDeviceActive() returns non-userNotEnrolled error → RecognizeError propagated
+    //   • enroll() returns error → RecognizeError propagated
 }
