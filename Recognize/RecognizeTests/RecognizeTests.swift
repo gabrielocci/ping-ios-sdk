@@ -70,10 +70,11 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
     func testBoolFalseWhenKeyAbsent() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
         XCTAssertFalse(opts.livenessEnvironmentAware)
-        XCTAssertFalse(opts.showSuccessFeedback)
+        // showSuccessFeedback, showFailureFeedback, showInstructionsScreen default to true (match Keyless SDK defaults)
+        XCTAssertTrue(opts.showSuccessFeedback)
         XCTAssertFalse(opts.shouldRetrieveEnrollmentFrame)
-        XCTAssertFalse(opts.showFailureFeedback)
-        XCTAssertFalse(opts.showInstructionsScreen)
+        XCTAssertTrue(opts.showFailureFeedback)
+        XCTAssertTrue(opts.showInstructionsScreen)
         XCTAssertFalse(opts.shouldRetrieveSecret)
         XCTAssertFalse(opts.shouldDeleteSecret)
         XCTAssertFalse(opts.shouldRetrieveAuthenticationFrame)
@@ -83,12 +84,23 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
     func testBoolFalseForNonTrueString() {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: "false",
-            JourneyConstants.showSuccessFeedback: "1",
             JourneyConstants.shouldRemovePin: "TRUE"   // case-sensitive — must be lowercase "true"
         ])
         XCTAssertFalse(opts.livenessEnvironmentAware)
-        XCTAssertFalse(opts.showSuccessFeedback)
         XCTAssertFalse(opts.shouldRemovePin)
+        // showSuccessFeedback with absent key still defaults to true
+        XCTAssertTrue(opts.showSuccessFeedback)
+    }
+
+    func testBoolFalseWhenExplicitlySetToFalse() {
+        let opts = RecognizeMobileSDKOptions(raw: [
+            JourneyConstants.showSuccessFeedback: JourneyConstants.boolFalse,
+            JourneyConstants.showFailureFeedback: JourneyConstants.boolFalse,
+            JourneyConstants.showInstructionsScreen: JourneyConstants.boolFalse
+        ])
+        XCTAssertFalse(opts.showSuccessFeedback)
+        XCTAssertFalse(opts.showFailureFeedback)
+        XCTAssertFalse(opts.showInstructionsScreen)
     }
 
     // MARK: Integer coercion
