@@ -537,9 +537,9 @@ final class EnrollWithClientStateTests: XCTestCase {
     // integration-test target once a test environment is available:
     //
     //   • clientState present + already enrolled → validateUserDeviceActive() returns nil,
-    //                                              enroll() NOT called, no error thrown
+    //                                              authenticate() IS called, enroll() NOT called
     //   • clientState present + not enrolled     → validateUserDeviceActive() returns .userNotEnrolled,
-    //                                              enroll(clientState:) IS called
+    //                                              enroll(clientState:) IS called, authenticate() NOT called
     //   • validateUserDeviceActive() returns non-userNotEnrolled error → RecognizeError propagated
     //   • enroll() returns error → RecognizeError propagated
 }
