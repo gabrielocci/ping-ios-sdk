@@ -216,19 +216,23 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
     /// Configures the Keyless SDK and executes the enrollment or authentication operation.
     ///
-    /// - Returns: `.success(())` on completion, or `.failure(error)` if any step fails.
-    ///   On failure the `IDToken1clientError` input field is automatically populated.
-    public func execute() async -> Result<Void, Error> {
+    /// - Parameter retrieveSelfie: When `true`, the captured biometric frame is returned to the caller.
+    ///   The selfie is never written to the Journey callback payload. Defaults to `false`.
+    /// - Returns: `.success(selfie)` where `selfie` is non-nil only when `retrieveSelfie` is `true`
+    ///   and the Keyless SDK captured a frame. Returns `.failure(error)` if any step fails; on failure
+    ///   the `IDToken1clientError` input field is automatically populated.
+    public func execute(retrieveSelfie: Bool = false) async -> Result<CGImage?, Error> {
         do {
             try await configure()
             try Task.checkCancellation()
+            let selfie: CGImage?
             switch operationType {
             case .enroll:
-                try await enroll(options: mobileSDKOptions)
+                selfie = try await enroll(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
             case .authenticate:
-                try await authenticate(options: mobileSDKOptions)
+                selfie = try await authenticate(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
             }
-            return .success(())
+            return .success(selfie)
         } catch {
             let message = error.localizedDescription.isEmpty
                 ? JourneyConstants.clientError
@@ -299,7 +303,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
     ///
     /// On success, populates `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState`.
-    internal func enroll(options: RecognizeMobileSDKOptions) async throws {
+    /// - Parameter retrieveSelfie: When `true`, instructs the Keyless SDK to capture the enrollment
+    ///   frame and returns it to the caller. The frame is never written to the Journey payload.
+    /// - Returns: The enrollment frame when `retrieveSelfie` is `true` and the SDK captured one; `nil` otherwise.
+    @discardableResult
+    internal func enroll(options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -315,21 +323,21 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware,
             cameraDelaySeconds: options.cameraDelaySeconds,
             generatingClientState: Self.clientStateType(from: generateClientState),
-            shouldRetrieveEnrollmentFrame: options.shouldRetrieveEnrollmentFrame,
+            shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen,
             showSuccessFeedback: options.showSuccessFeedback,
             showFailureFeedback: options.showFailureFeedback,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
                     if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
-                    continuation.resume()
+                    continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message))
@@ -345,7 +353,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     ///
     /// On success, populates `IDToken1signedJwt`, `IDToken1clientState`, and (when available)
     /// `IDToken1devicePublicSigningKey`.
-    internal func authenticate(options: RecognizeMobileSDKOptions) async throws {
+    /// - Parameter retrieveSelfie: When `true`, instructs the Keyless SDK to capture the authentication
+    ///   frame and returns it to the caller. The frame is never written to the Journey payload.
+    /// - Returns: The authentication frame when `retrieveSelfie` is `true` and the SDK captured one; `nil` otherwise.
+    @discardableResult
+    internal func authenticate(options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -358,7 +370,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware,
             cameraDelaySeconds: options.cameraDelaySeconds,
             generatingClientState: Self.clientStateType(from: generateClientState),
-            shouldRetrieveAuthenticationFrame: options.shouldRetrieveAuthenticationFrame,
+            shouldRetrieveAuthenticationFrame: retrieveSelfie,
             showSuccessFeedback: options.showSuccessFeedback,
             shouldRemovePin: options.shouldRemovePin,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
@@ -366,7 +378,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             Keyless.authenticate(configuration: authConfig) { [weak self] result in
                 switch result {
                 case .success(let response):
@@ -375,7 +387,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: retrieveSelfie ? response.authenticationFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message))
