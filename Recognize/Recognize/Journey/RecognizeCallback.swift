@@ -391,15 +391,16 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         }
     }
 
-    /// Handles the authenticate-with-clientState path: validates the user and device are active,
-    /// then enrolls using the server-supplied `clientState` instead of running a biometric auth session.
+    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled,
+    /// and if not, enrolls using the server-supplied `clientState` instead of running a biometric auth session.
     ///
     /// Called from `execute()` in place of `authenticate()` when the server provides a `clientState`.
+    /// If `validateUserDeviceActive` returns nil the user is already enrolled — enrollment is skipped.
     /// If `validateUserDeviceActive` returns a `userNotEnrolled` integration error the user is not
-    /// yet enrolled and enrollment is skipped without propagating an error.
+    /// yet enrolled and `enroll(clientState:)` is called.
     /// Any other error from either call is propagated as a `RecognizeError`.
     internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws {
-        // Step 1: validate — nil means enrolled, userNotEnrolled means skip, anything else is an error.
+        // Step 1: validate — nil means already enrolled (skip), userNotEnrolled means proceed, anything else is an error.
         let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
             Keyless.validateUserDeviceActive { error in
                 continuation.resume(returning: error)
@@ -407,13 +408,16 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         }
 
         if let error = validationError {
-            if case .integrationError(let ie) = error.kind, ie == .userNotEnrolled {
-                return
+            guard case .integrationError(let ie) = error.kind, ie == .userNotEnrolled else {
+                throw RecognizeError(error.message)
             }
-            throw RecognizeError(error.message)
+            // userNotEnrolled — fall through to enroll below.
+        } else {
+            // nil — user is already enrolled, nothing to do.
+            return
         }
 
-        // Step 2: user is enrolled — re-enroll with the server-supplied clientState.
+        // Step 2: user is not enrolled — enroll with the server-supplied clientState.
         let enrollConfig = BiomEnrollConfig(
             clientState: clientState,
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),

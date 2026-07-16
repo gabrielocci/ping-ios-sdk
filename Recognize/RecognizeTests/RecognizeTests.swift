@@ -536,9 +536,10 @@ final class EnrollWithClientStateTests: XCTestCase {
     // no injectable seam. Integration tests for these paths should be added in a dedicated
     // integration-test target once a test environment is available:
     //
-    //   • clientState present + enrolled  → validateUserDeviceActive() nil, enroll() called
-    //   • clientState present + not enrolled → validateUserDeviceActive() returns .userNotEnrolled,
-    //                                          enroll() NOT called, no error thrown
+    //   • clientState present + already enrolled → validateUserDeviceActive() returns nil,
+    //                                              enroll() NOT called, no error thrown
+    //   • clientState present + not enrolled     → validateUserDeviceActive() returns .userNotEnrolled,
+    //                                              enroll(clientState:) IS called
     //   • validateUserDeviceActive() returns non-userNotEnrolled error → RecognizeError propagated
     //   • enroll() returns error → RecognizeError propagated
 }
