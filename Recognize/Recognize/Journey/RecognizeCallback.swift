@@ -391,14 +391,12 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         }
     }
 
-    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled,
-    /// and if not, enrolls using the server-supplied `clientState` instead of running a biometric auth session.
+    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled.
     ///
     /// Called from `execute()` in place of `authenticate()` when the server provides a `clientState`.
-    /// If `validateUserDeviceActive` returns nil the user is already enrolled — enrollment is skipped.
-    /// If `validateUserDeviceActive` returns a `userNotEnrolled` integration error the user is not
-    /// yet enrolled and `enroll(clientState:)` is called.
-    /// Any other error from either call is propagated as a `RecognizeError`.
+    /// - If `validateUserDeviceActive` returns nil the user is already enrolled — runs normal authentication.
+    /// - If `validateUserDeviceActive` returns `userNotEnrolled` — calls `enroll(clientState:)`.
+    /// - Any other error from either call is propagated as a `RecognizeError`.
     internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws {
         // Step 1: validate — nil means already enrolled (skip), userNotEnrolled means proceed, anything else is an error.
         let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
@@ -413,7 +411,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             }
             // userNotEnrolled — fall through to enroll below.
         } else {
-            // nil — user is already enrolled, nothing to do.
+            // nil — user is already enrolled, run normal authentication.
+            try await authenticate(options: options)
             return
         }
 
