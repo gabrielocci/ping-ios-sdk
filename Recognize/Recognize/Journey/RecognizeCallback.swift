@@ -226,7 +226,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             case .enroll:
                 try await enroll(options: mobileSDKOptions)
             case .authenticate:
-                try await authenticate(options: mobileSDKOptions)
+                if !clientState.isEmpty {
+                    try await enrollWithClientState(clientState, options: mobileSDKOptions)
+                } else {
+                    try await authenticate(options: mobileSDKOptions)
+                }
             }
             return .success(())
         } catch {
@@ -382,6 +386,59 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     } else {
                         continuation.resume(throwing: error)
                     }
+                }
+            }
+        }
+    }
+
+    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled.
+    ///
+    /// Called from `execute()` in place of `authenticate()` when the server provides a `clientState`.
+    /// - If `validateUserDeviceActive` returns nil the user is already enrolled — runs normal authentication.
+    /// - If `validateUserDeviceActive` returns `userNotEnrolled` — calls `enroll(clientState:)`.
+    /// - Any other error from either call is propagated as a `RecognizeError`.
+    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws {
+        // Step 1: validate — nil means already enrolled (skip), userNotEnrolled means proceed, anything else is an error.
+        let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
+            Keyless.validateUserDeviceActive { error in
+                continuation.resume(returning: error)
+            }
+        }
+
+        if let error = validationError {
+            guard case .integrationError(let ie) = error.kind, ie == .userNotEnrolled else {
+                throw RecognizeError(error.message)
+            }
+            // userNotEnrolled — fall through to enroll below.
+        } else {
+            // nil — user is already enrolled, run normal authentication.
+            try await authenticate(options: options)
+            return
+        }
+
+        // Step 2: user is not enrolled — enroll with the server-supplied clientState.
+        let enrollConfig = BiomEnrollConfig(
+            clientState: clientState,
+            livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
+            livenessEnvironmentAware: options.livenessEnvironmentAware,
+            cameraDelaySeconds: options.cameraDelaySeconds,
+            generatingClientState: Self.clientStateType(from: generateClientState),
+            showInstructionsScreen: options.showInstructionsScreen,
+            showSuccessFeedback: options.showSuccessFeedback,
+            showFailureFeedback: options.showFailureFeedback,
+            presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
+        )
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            Keyless.enroll(configuration: enrollConfig) { [weak self] result in
+                switch result {
+                case .success(let enrollmentResult):
+                    if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
+                    if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
+                    if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: RecognizeError(error.message))
                 }
             }
         }
