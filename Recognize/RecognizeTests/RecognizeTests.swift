@@ -454,6 +454,40 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
     }
 }
 
+// MARK: - EnrollWithClientStateTests
+
+final class EnrollWithClientStateTests: XCTestCase {
+
+    func testClientStateAbsentRoutesToAuthenticateBranch() async {
+        let inputKeys = [
+            JourneyConstants.inputSignedJwt,
+            JourneyConstants.inputClientState,
+            JourneyConstants.inputRecognizeId,
+            JourneyConstants.inputDevicePublicSigningKey,
+            JourneyConstants.inputClientError,
+            JourneyConstants.inputClientErrorCode
+        ]
+        let inputArray = inputKeys.map { ["name": $0, "value": ""] }
+        let outputArray: [[String: Any]] = [
+            ["name": JourneyConstants.operationType, "value": "AUTHENTICATE"]
+        ]
+        let json: [String: Any] = [
+            "input": inputArray,
+            "output": outputArray,
+            "type": JourneyConstants.pingOneRecognizeCallback
+        ]
+        let callback = RecognizeCallback()
+        _ = await callback.initialize(with: json)
+
+        XCTAssertEqual(callback.clientState, "")
+        XCTAssertEqual(callback.operationType, .authenticate)
+
+        let inputs = callback.json["input"] as? [[String: Any]]
+        let recognizeIdValue = inputs?.first(where: { ($0["name"] as? String) == JourneyConstants.inputRecognizeId })?["value"] as? String
+        XCTAssertEqual(recognizeIdValue, "")
+    }
+}
+
 // MARK: - RecognizeOperationTypeTests
 
 final class RecognizeOperationTypeTests: XCTestCase {
@@ -477,60 +511,4 @@ final class RecognizeOperationTypeTests: XCTestCase {
     func testInitFromRawValueUnknownReturnsNil() {
         XCTAssertNil(RecognizeOperationType(rawValue: "UNKNOWN"))
     }
-}
-
-// MARK: - EnrollWithClientStateTests
-
-final class EnrollWithClientStateTests: XCTestCase {
-
-    // MARK: clientState absent — execute() takes the authenticate() branch, not enrollWithClientState
-
-    /// When operationType is .authenticate and clientState is empty, execute() must route to
-    /// authenticate() — not enrollWithClientState(). We verify this by inspecting which input
-    /// fields execute() writes: if enrollWithClientState ran it would write recognizeId and
-    /// potentially overwrite clientState, which authenticate() never does.
-    func testClientStateAbsentRoutesToAuthenticateBranch() async {
-        let inputKeys = [
-            JourneyConstants.inputSignedJwt,
-            JourneyConstants.inputClientState,
-            JourneyConstants.inputRecognizeId,
-            JourneyConstants.inputDevicePublicSigningKey,
-            JourneyConstants.inputClientError,
-            JourneyConstants.inputClientErrorCode
-        ]
-        let inputArray = inputKeys.map { ["name": $0, "value": ""] }
-        let outputArray: [[String: Any]] = [
-            ["name": JourneyConstants.operationType, "value": "AUTHENTICATE"]
-        ]
-        let json: [String: Any] = [
-            "input": inputArray,
-            "output": outputArray,
-            "type": JourneyConstants.pingOneRecognizeCallback
-        ]
-        let callback = RecognizeCallback()
-        _ = await callback.initialize(with: json)
-
-        // clientState output field is absent — initValue was never called with it.
-        XCTAssertEqual(callback.clientState, "")
-        XCTAssertEqual(callback.operationType, .authenticate)
-
-        // recognizeId input must remain empty — enrollWithClientState would have written it.
-        let inputs = callback.json["input"] as? [[String: Any]]
-        let recognizeIdValue = inputs?.first(where: { ($0["name"] as? String) == JourneyConstants.inputRecognizeId })?["value"] as? String
-        XCTAssertEqual(recognizeIdValue, "")
-    }
-
-    // MARK: Validate + enroll paths require a live Keyless SDK connection.
-    //
-    // The paths below cannot be unit-tested without a running Keyless backend because
-    // Keyless.validateUserDeviceActive() and Keyless.enroll() are static functions with
-    // no injectable seam. Integration tests for these paths should be added in a dedicated
-    // integration-test target once a test environment is available:
-    //
-    //   • clientState present + already enrolled → validateUserDeviceActive() returns nil,
-    //                                              authenticate() IS called, enroll() NOT called
-    //   • clientState present + not enrolled     → validateUserDeviceActive() returns .userNotEnrolled,
-    //                                              enroll(clientState:) IS called, authenticate() NOT called
-    //   • validateUserDeviceActive() returns non-userNotEnrolled error → RecognizeError propagated
-    //   • enroll() returns error → RecognizeError propagated
 }
