@@ -11,6 +11,7 @@
 import XCTest
 import KeylessSDK
 @testable import PingRecognize
+import PingJourneyPlugin
 
 // MARK: - RecognizeErrorTests
 
@@ -56,40 +57,39 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
             JourneyConstants.shouldRetrieveAuthenticationFrame: JourneyConstants.boolTrue,
             JourneyConstants.shouldRemovePin: JourneyConstants.boolTrue
         ])
-        XCTAssertTrue(opts.livenessEnvironmentAware)
-        XCTAssertTrue(opts.showSuccessFeedback)
-        XCTAssertTrue(opts.shouldRetrieveEnrollmentFrame)
-        XCTAssertTrue(opts.showFailureFeedback)
-        XCTAssertTrue(opts.showInstructionsScreen)
+        XCTAssertEqual(opts.livenessEnvironmentAware, true)
+        XCTAssertEqual(opts.showSuccessFeedback, true)
+        XCTAssertEqual(opts.shouldRetrieveEnrollmentFrame, true)
+        XCTAssertEqual(opts.showFailureFeedback, true)
+        XCTAssertEqual(opts.showInstructionsScreen, true)
         XCTAssertTrue(opts.shouldRetrieveSecret)
         XCTAssertTrue(opts.shouldDeleteSecret)
-        XCTAssertTrue(opts.shouldRetrieveAuthenticationFrame)
+        XCTAssertEqual(opts.shouldRetrieveAuthenticationFrame, true)
         XCTAssertTrue(opts.shouldRemovePin)
     }
 
     func testBoolFalseWhenKeyAbsent() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
-        XCTAssertFalse(opts.livenessEnvironmentAware)
-        // showSuccessFeedback, showFailureFeedback, showInstructionsScreen default to true (match Keyless SDK defaults)
-        XCTAssertTrue(opts.showSuccessFeedback)
-        XCTAssertFalse(opts.shouldRetrieveEnrollmentFrame)
-        XCTAssertTrue(opts.showFailureFeedback)
-        XCTAssertTrue(opts.showInstructionsScreen)
+        XCTAssertNil(opts.livenessEnvironmentAware)
+        XCTAssertNil(opts.showSuccessFeedback)
+        XCTAssertNil(opts.shouldRetrieveEnrollmentFrame)
+        XCTAssertNil(opts.showFailureFeedback)
+        XCTAssertNil(opts.showInstructionsScreen)
         XCTAssertFalse(opts.shouldRetrieveSecret)
         XCTAssertFalse(opts.shouldDeleteSecret)
-        XCTAssertFalse(opts.shouldRetrieveAuthenticationFrame)
+        XCTAssertNil(opts.shouldRetrieveAuthenticationFrame)
         XCTAssertFalse(opts.shouldRemovePin)
     }
 
     func testBoolFalseForNonTrueString() {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: "false",
-            JourneyConstants.shouldRemovePin: "TRUE"   // case-sensitive — must be lowercase "true"
+            JourneyConstants.shouldRemovePin: "TRUE",   // case-sensitive — Bool("TRUE") == nil
+            JourneyConstants.showSuccessFeedback: "false"
         ])
-        XCTAssertFalse(opts.livenessEnvironmentAware)
+        XCTAssertEqual(opts.livenessEnvironmentAware, false)
         XCTAssertFalse(opts.shouldRemovePin)
-        // showSuccessFeedback with absent key still defaults to true
-        XCTAssertTrue(opts.showSuccessFeedback)
+        XCTAssertEqual(opts.showSuccessFeedback, false)
     }
 
     func testBoolFalseWhenExplicitlySetToFalse() {
@@ -98,9 +98,9 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
             JourneyConstants.showFailureFeedback: JourneyConstants.boolFalse,
             JourneyConstants.showInstructionsScreen: JourneyConstants.boolFalse
         ])
-        XCTAssertFalse(opts.showSuccessFeedback)
-        XCTAssertFalse(opts.showFailureFeedback)
-        XCTAssertFalse(opts.showInstructionsScreen)
+        XCTAssertEqual(opts.showSuccessFeedback, false)
+        XCTAssertEqual(opts.showFailureFeedback, false)
+        XCTAssertEqual(opts.showInstructionsScreen, false)
     }
 
     // MARK: Integer coercion
@@ -110,14 +110,14 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         XCTAssertEqual(opts.cameraDelaySeconds, 3)
     }
 
-    func testCameraDelaySecondsEmptyStringDefaultsToZero() {
+    func testCameraDelaySecondsAbsentReturnsNil() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
-        XCTAssertEqual(opts.cameraDelaySeconds, 0)
+        XCTAssertNil(opts.cameraDelaySeconds)
     }
 
-    func testCameraDelaySecondsNonNumericDefaultsToZero() {
+    func testCameraDelaySecondsNonNumericReturnsNil() {
         let opts = RecognizeMobileSDKOptions(raw: [JourneyConstants.cameraDelaySeconds: "abc"])
-        XCTAssertEqual(opts.cameraDelaySeconds, 0)
+        XCTAssertNil(opts.cameraDelaySeconds)
     }
 
     func testNumberOfEnrollmentCircuitsValidInt() {
@@ -125,15 +125,14 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         XCTAssertEqual(opts.numberOfEnrollmentCircuits, 7)
     }
 
-    func testNumberOfEnrollmentCircuitsAbsentDefaultsFiveViaConstant() {
-        // JourneyConstants.defaultNumberOfEnrollmentCircuits == "5"
+    func testNumberOfEnrollmentCircuitsAbsentReturnsNil() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
-        XCTAssertEqual(opts.numberOfEnrollmentCircuits, 5)
+        XCTAssertNil(opts.numberOfEnrollmentCircuits)
     }
 
-    func testNumberOfEnrollmentCircuitsNonNumericDefaultsFive() {
+    func testNumberOfEnrollmentCircuitsNonNumericReturnsNil() {
         let opts = RecognizeMobileSDKOptions(raw: [JourneyConstants.numberOfEnrollmentCircuits: "nope"])
-        XCTAssertEqual(opts.numberOfEnrollmentCircuits, 5)
+        XCTAssertNil(opts.numberOfEnrollmentCircuits)
     }
 
     // MARK: String properties
@@ -277,7 +276,7 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         ]
         callback.initValue(name: JourneyConstants.mobileSDKOptions, value: raw)
         XCTAssertEqual(callback.mobileSDKOptions.livenessConfiguration, "LEVEL_1")
-        XCTAssertTrue(callback.mobileSDKOptions.livenessEnvironmentAware)
+        XCTAssertEqual(callback.mobileSDKOptions.livenessEnvironmentAware, true)
     }
 
     func testInitValueMobileSDKOptionsNonStringValuesCoerced() {
@@ -288,12 +287,12 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 4)
     }
 
-    func testInitValueMobileSDKOptionsEmptyDictProducesDefaults() {
+    func testInitValueMobileSDKOptionsEmptyDictProducesNilForOptionals() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.mobileSDKOptions, value: [String: Any]())
-        XCTAssertFalse(callback.mobileSDKOptions.livenessEnvironmentAware)
-        XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 0)
-        XCTAssertEqual(callback.mobileSDKOptions.numberOfEnrollmentCircuits, 5)
+        XCTAssertNil(callback.mobileSDKOptions.livenessEnvironmentAware)
+        XCTAssertNil(callback.mobileSDKOptions.cameraDelaySeconds)
+        XCTAssertNil(callback.mobileSDKOptions.numberOfEnrollmentCircuits)
     }
 
     func testInitValueUnknownKeyIsIgnored() {
@@ -402,9 +401,9 @@ final class StringDictionaryTests: XCTestCase {
     func testNonDictValueProducesEmptyOptions() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.mobileSDKOptions, value: "not-a-dict")
-        XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 0)
-        XCTAssertEqual(callback.mobileSDKOptions.numberOfEnrollmentCircuits, 5)
-        XCTAssertFalse(callback.mobileSDKOptions.livenessEnvironmentAware)
+        XCTAssertNil(callback.mobileSDKOptions.cameraDelaySeconds)
+        XCTAssertNil(callback.mobileSDKOptions.numberOfEnrollmentCircuits)
+        XCTAssertNil(callback.mobileSDKOptions.livenessEnvironmentAware)
     }
 }
 
@@ -427,14 +426,6 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
 
     func testBoolTrueConstant() {
         XCTAssertEqual(JourneyConstants.boolTrue, "true")
-    }
-
-    func testDefaultZeroConstant() {
-        XCTAssertEqual(JourneyConstants.defaultZero, "0")
-    }
-
-    func testDefaultNumberOfEnrollmentCircuitsConstant() {
-        XCTAssertEqual(JourneyConstants.defaultNumberOfEnrollmentCircuits, "5")
     }
 
     func testClientErrorConstant() {
