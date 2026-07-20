@@ -9,6 +9,7 @@
 //
 
 #if canImport(KeylessSDK)
+import CoreGraphics
 import Foundation
 import KeylessSDK
 import PingOrchestrate
@@ -39,7 +40,7 @@ public struct RecognizeMobileSDKOptions: Sendable {
     public var livenessConfiguration: String { raw[JourneyConstants.livenessConfiguration] ?? "" }
 
     /// Whether the SDK adapts its behaviour to the surrounding environment.
-    public var livenessEnvironmentAware: Bool { raw[JourneyConstants.livenessEnvironmentAware] == JourneyConstants.boolTrue }
+    public var livenessEnvironmentAware: Bool? { raw[JourneyConstants.livenessEnvironmentAware].flatMap(Bool.init) }
 
     /// The server-assigned operation info ID.
     public var operationInfoId: String { raw[JourneyConstants.operationInfoId] ?? "" }
@@ -51,13 +52,10 @@ public struct RecognizeMobileSDKOptions: Sendable {
     public var operationInfoExternalUserId: String { raw[JourneyConstants.operationInfoExternalUserId] ?? "" }
 
     /// Delay in seconds before the camera activates.
-    public var cameraDelaySeconds: Int { Int(raw[JourneyConstants.cameraDelaySeconds] ?? JourneyConstants.defaultZero) ?? 0 }
+    public var cameraDelaySeconds: Int? { raw[JourneyConstants.cameraDelaySeconds].flatMap(Int.init) }
 
     /// Whether to show a success feedback overlay after the operation completes.
-    ///
-    /// Defaults to `true` to match `DEFAULT_SHOW_SUCCESS_FEEDBACK` in the Keyless SDK.
-    /// Uses `!= boolFalse` so that an absent server value preserves the Keyless default.
-    public var showSuccessFeedback: Bool { raw[JourneyConstants.showSuccessFeedback] != JourneyConstants.boolFalse }
+    public var showSuccessFeedback: Bool? { raw[JourneyConstants.showSuccessFeedback].flatMap(Bool.init) }
 
     // MARK: Enrollment-only options
 
@@ -67,26 +65,19 @@ public struct RecognizeMobileSDKOptions: Sendable {
 
     /// Whether to retrieve the enrollment frame image.
     /// - Note: The server-side key intentionally contains a typo (`"shuold"`) which is preserved.
-    public var shouldRetrieveEnrollmentFrame: Bool { raw[JourneyConstants.shouldRetrieveEnrollmentFrame] == JourneyConstants.boolTrue }
+    public var shouldRetrieveEnrollmentFrame: Bool? { raw[JourneyConstants.shouldRetrieveEnrollmentFrame].flatMap(Bool.init) }
 
     /// Whether to show a failure feedback overlay when enrollment fails.
-    ///
-    /// Defaults to `true` to match `DEFAULT_SHOW_FAILURE_FEEDBACK` in the Keyless SDK.
-    /// Uses `!= boolFalse` so that an absent server value preserves the Keyless default.
-    public var showFailureFeedback: Bool { raw[JourneyConstants.showFailureFeedback] != JourneyConstants.boolFalse }
+    public var showFailureFeedback: Bool? { raw[JourneyConstants.showFailureFeedback].flatMap(Bool.init) }
 
     /// Whether to display the instructions screen before the camera activates.
-    ///
-    /// Defaults to `true` to match `BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN` in the Keyless SDK.
-    /// Uses `!= boolFalse` instead of the usual `== boolTrue` pattern so that an absent server value
-    /// preserves the Keyless default rather than silently disabling the screen.
-    public var showInstructionsScreen: Bool { raw[JourneyConstants.showInstructionsScreen] != JourneyConstants.boolFalse }
+    public var showInstructionsScreen: Bool? { raw[JourneyConstants.showInstructionsScreen].flatMap(Bool.init) }
 
     /// The UI presentation style for enrollment (e.g. `"OVERLAY"`).
     public var presentation: String { raw[JourneyConstants.presentation] ?? "" }
 
     /// The number of enrollment circuits the SDK runs to capture biometrics.
-    public var numberOfEnrollmentCircuits: Int { Int(raw[JourneyConstants.numberOfEnrollmentCircuits] ?? JourneyConstants.defaultNumberOfEnrollmentCircuits) ?? 5 }
+    public var numberOfEnrollmentCircuits: Int? { raw[JourneyConstants.numberOfEnrollmentCircuits].flatMap(Int.init) }
 
     // MARK: Authentication-only options
 
@@ -100,12 +91,13 @@ public struct RecognizeMobileSDKOptions: Sendable {
 
     /// Whether to retrieve the authentication frame image.
     /// - Note: The server-side key intentionally contains a typo (`"shouldRetrive"`) which is preserved.
-    public var shouldRetrieveAuthenticationFrame: Bool { raw[JourneyConstants.shouldRetrieveAuthenticationFrame] == JourneyConstants.boolTrue }
+    public var shouldRetrieveAuthenticationFrame: Bool? { raw[JourneyConstants.shouldRetrieveAuthenticationFrame].flatMap(Bool.init) }
 
     /// The UI presentation style for authentication (e.g. `"CAMERA_PREVIEW"`).
     public var presentationStyle: String { raw[JourneyConstants.presentationStyle] ?? "" }
 
     /// Whether to remove the PIN binding after authentication.
+    // No DEFAULT_REMOVING_PIN public constant on BiomAuthConfig — absent value treated as false.
     public var shouldRemovePin: Bool { raw[JourneyConstants.shouldRemovePin] == JourneyConstants.boolTrue }
 }
 
@@ -230,7 +222,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             case .enroll:
                 selfie = try await enroll(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
             case .authenticate:
-                selfie = try await authenticate(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
+                if !clientState.isEmpty {
+                    selfie = try await enrollWithClientState(clientState, options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
+                } else {
+                    selfie = try await authenticate(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
+                }
             }
             return .success(selfie)
         } catch {
@@ -287,7 +283,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         let setupConfig = SetupConfig(
             apiKey: apiKey,
             hosts: [host],
-            numberOfEnrollmentCircuits: mobileSDKOptions.numberOfEnrollmentCircuits
+            numberOfEnrollmentCircuits: mobileSDKOptions.numberOfEnrollmentCircuits ?? SetupConfig.DEFAULT_NUMBER_OF_ENROLLMENT_CIRCUITS
         )
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.configure(setupConfiguration: setupConfig) { error in
@@ -320,13 +316,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             operationInfo: operationInfo,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
-            livenessEnvironmentAware: options.livenessEnvironmentAware,
-            cameraDelaySeconds: options.cameraDelaySeconds,
+            // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
+            livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
+            cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: Self.clientStateType(from: generateClientState),
             shouldRetrieveEnrollmentFrame: retrieveSelfie,
-            showInstructionsScreen: options.showInstructionsScreen,
-            showSuccessFeedback: options.showSuccessFeedback,
-            showFailureFeedback: options.showFailureFeedback,
+            showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
+            showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
+            showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
@@ -367,11 +364,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
         let authConfig = BiomAuthConfig(
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
-            livenessEnvironmentAware: options.livenessEnvironmentAware,
-            cameraDelaySeconds: options.cameraDelaySeconds,
+            livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
+            cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: Self.clientStateType(from: generateClientState),
             shouldRetrieveAuthenticationFrame: retrieveSelfie,
-            showSuccessFeedback: options.showSuccessFeedback,
+            showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             shouldRemovePin: options.shouldRemovePin,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
@@ -394,6 +391,60 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     } else {
                         continuation.resume(throwing: error)
                     }
+                }
+            }
+        }
+    }
+
+    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled.
+    ///
+    /// Called from `execute()` in place of `authenticate()` when the server provides a `clientState`.
+    /// - If `validateUserDeviceActive` returns nil the user is already enrolled — runs normal authentication.
+    /// - If `validateUserDeviceActive` returns `userNotEnrolled` — calls `enroll(clientState:)`.
+    /// - Any other error from either call is propagated as a `RecognizeError`.
+    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
+        // Step 1: validate — nil means already enrolled (skip), userNotEnrolled means proceed, anything else is an error.
+        let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
+            Keyless.validateUserDeviceActive { error in
+                continuation.resume(returning: error)
+            }
+        }
+
+        if let error = validationError {
+            guard case .integrationError(let ie) = error.kind, ie == .userNotEnrolled else {
+                throw RecognizeError(error.message)
+            }
+            // userNotEnrolled — fall through to enroll below.
+        } else {
+            // nil — user is already enrolled, run normal authentication.
+            return try await authenticate(options: options, retrieveSelfie: retrieveSelfie)
+        }
+
+        // Step 2: user is not enrolled — enroll with the server-supplied clientState.
+        let enrollConfig = BiomEnrollConfig(
+            clientState: clientState,
+            livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
+            // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
+            livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
+            cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
+            generatingClientState: Self.clientStateType(from: generateClientState),
+            shouldRetrieveEnrollmentFrame: retrieveSelfie,
+            showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
+            showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
+            showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
+            presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
+        )
+
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
+            Keyless.enroll(configuration: enrollConfig) { [weak self] result in
+                switch result {
+                case .success(let enrollmentResult):
+                    if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
+                    if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
+                    if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
+                case .failure(let error):
+                    continuation.resume(throwing: RecognizeError(error.message))
                 }
             }
         }
@@ -483,10 +534,6 @@ extension JourneyConstants {
     public static let boolTrue = "true"
     /// String representation of a `false` boolean as delivered by the server.
     public static let boolFalse = "false"
-    /// Default string value for integer fields that default to zero.
-    public static let defaultZero = "0"
-    /// Default number of enrollment circuits when no value is provided by the server.
-    public static let defaultNumberOfEnrollmentCircuits = "5"
 
     // MARK: PingOneRecognize — output field keys
 
