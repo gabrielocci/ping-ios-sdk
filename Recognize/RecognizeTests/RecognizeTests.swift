@@ -229,19 +229,19 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
     func testInitValueGenerateClientStateString() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: "true")
-        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+        XCTAssertTrue(callback.generateClientState)
     }
 
     func testInitValueGenerateClientStateBoolTrue() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: true)
-        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+        XCTAssertTrue(callback.generateClientState)
     }
 
     func testInitValueGenerateClientStateBoolFalse() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: false)
-        XCTAssertEqual(callback.generateClientState, "")
+        XCTAssertFalse(callback.generateClientState)
     }
 
     func testInitValueClientState() {
