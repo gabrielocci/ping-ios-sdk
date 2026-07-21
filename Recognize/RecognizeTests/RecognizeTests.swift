@@ -18,23 +18,24 @@ import PingJourneyPlugin
 final class RecognizeErrorTests: XCTestCase {
 
     func testInitStoresMessage() {
-        let error = RecognizeError("something went wrong")
+        let error = RecognizeError("something went wrong", code: 30000)
         XCTAssertEqual(error.message, "something went wrong")
+        XCTAssertEqual(error.code, 30000)
     }
 
     func testErrorDescriptionMatchesMessage() {
-        let error = RecognizeError("network timeout")
+        let error = RecognizeError("network timeout", code: 30005)
         XCTAssertEqual(error.errorDescription, "network timeout")
     }
 
     func testEmptyMessageIsAllowed() {
-        let error = RecognizeError("")
+        let error = RecognizeError("", code: 0)
         XCTAssertEqual(error.message, "")
         XCTAssertEqual(error.errorDescription, "")
     }
 
     func testConformsToLocalizedError() {
-        let error: LocalizedError = RecognizeError("test")
+        let error: LocalizedError = RecognizeError("test", code: 0)
         XCTAssertEqual(error.errorDescription, "test")
     }
 }

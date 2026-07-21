@@ -210,6 +210,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                 ? JourneyConstants.clientError
                 : error.localizedDescription
             self.error(message)
+            if let recognizeError = error as? RecognizeError {
+                setClientErrorCode(String(recognizeError.code))
+            }
             return .failure(error)
         }
     }
@@ -264,7 +267,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.configure(setupConfiguration: setupConfig) { error in
                 if let error = error {
-                    continuation.resume(throwing: RecognizeError(error.message))
+                    continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 } else {
                     continuation.resume()
                 }
@@ -308,7 +311,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     continuation.resume()
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message))
+                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -352,7 +355,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     continuation.resume()
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message))
+                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -377,7 +380,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
         if let error = validationError {
             guard case .integrationError(let ie) = error.kind, ie == .userNotEnrolled else {
-                throw RecognizeError(error.message)
+                throw RecognizeError(error.message, code: error.code)
             }
             // userNotEnrolled — fall through to enroll below.
         } else {
@@ -409,7 +412,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
                     continuation.resume()
                 case .failure(let error):
-                    continuation.resume(throwing: RecognizeError(error.message))
+                    continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 }
             }
         }
