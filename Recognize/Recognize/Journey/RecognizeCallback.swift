@@ -135,8 +135,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// Customer-supplied transaction data to be signed by the SDK.
     private(set) public var transactionData: String = ""
 
-    /// The `generateClientState` bool string supplied by the server (`"true"` or `"false"`).
-    private(set) public var generateClientState: String = ""
+    /// Whether the server requested generation of a new client state.
+    private(set) public var generateClientState: Bool = false
 
     /// An existing client-state payload provided by the server during enrollment restore.
     private(set) public var clientState: String = ""
@@ -171,9 +171,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             if let stringValue = value as? String { self.transactionData = stringValue }
         case JourneyConstants.generateClientState:
             if let boolValue = value as? Bool {
-                self.generateClientState = boolValue ? JourneyConstants.boolTrue : ""
+                self.generateClientState = boolValue
             } else if let stringValue = value as? String {
-                self.generateClientState = stringValue
+                self.generateClientState = Bool(stringValue) ?? false
             }
         case JourneyConstants.clientState:
             if let stringValue = value as? String { self.clientState = stringValue }
@@ -294,7 +294,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
@@ -336,7 +336,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
@@ -396,7 +396,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
@@ -450,13 +450,6 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         case "NO_CAMERA_PREVIEW": return .noCameraPreview
         default:                  return .cameraPreview
         }
-    }
-
-    /// Maps the server `generateClientState` bool string (`"true"` / `"false"`) to `ClientStateType`.
-    ///
-    /// `"true"` → `.backup`; any other value → `nil`.
-    private static func clientStateType(from string: String) -> ClientStateType? {
-        return string == JourneyConstants.boolTrue ? .backup : nil
     }
 
     /// Converts a JSON value to a `[String: String]` dictionary.
