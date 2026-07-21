@@ -308,6 +308,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self?.setDevicePublicSigningKey(key)
+                    }
                     continuation.resume()
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
@@ -410,6 +413,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self?.setDevicePublicSigningKey(key)
+                    }
                     continuation.resume()
                 case .failure(let error):
                     continuation.resume(throwing: RecognizeError(error.message, code: error.code))
