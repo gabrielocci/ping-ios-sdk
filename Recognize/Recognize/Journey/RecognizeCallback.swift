@@ -62,10 +62,6 @@ public struct RecognizeMobileSDKOptions: Sendable {
     /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
     public var customSecret: String { raw[JourneyConstants.customSecret] ?? "" }
 
-    /// Whether to retrieve the enrollment frame image.
-    /// - Note: The server-side key intentionally contains a typo (`"shuold"`) which is preserved.
-    public var shouldRetrieveEnrollmentFrame: Bool? { raw[JourneyConstants.shouldRetrieveEnrollmentFrame].flatMap(Bool.init) }
-
     /// Whether to show a failure feedback overlay when enrollment fails.
     public var showFailureFeedback: Bool? { raw[JourneyConstants.showFailureFeedback].flatMap(Bool.init) }
 
@@ -80,24 +76,9 @@ public struct RecognizeMobileSDKOptions: Sendable {
 
     // MARK: Authentication-only options
 
-    /// Whether to retrieve the stored biometric secret during authentication.
-    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
-    public var shouldRetrieveSecret: Bool { raw[JourneyConstants.shouldRetrieveSecret] == JourneyConstants.boolTrue }
-
-    /// Whether to delete the stored biometric secret after successful authentication.
-    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
-    public var shouldDeleteSecret: Bool { raw[JourneyConstants.shouldDeleteSecret] == JourneyConstants.boolTrue }
-
-    /// Whether to retrieve the authentication frame image.
-    /// - Note: The server-side key intentionally contains a typo (`"shouldRetrive"`) which is preserved.
-    public var shouldRetrieveAuthenticationFrame: Bool? { raw[JourneyConstants.shouldRetrieveAuthenticationFrame].flatMap(Bool.init) }
-
     /// The UI presentation style for authentication (e.g. `"CAMERA_PREVIEW"`).
     public var presentationStyle: String { raw[JourneyConstants.presentationStyle] ?? "" }
 
-    /// Whether to remove the PIN binding after authentication.
-    // No DEFAULT_REMOVING_PIN public constant on BiomAuthConfig — absent value treated as false.
-    public var shouldRemovePin: Bool { raw[JourneyConstants.shouldRemovePin] == JourneyConstants.boolTrue }
 }
 
 // MARK: - RecognizeCallback
@@ -311,7 +292,6 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: Self.clientStateType(from: generateClientState),
-            shouldRetrieveEnrollmentFrame: options.shouldRetrieveEnrollmentFrame ?? BiomEnrollConfig.DEFAULT_SHOULD_RETRIEVE_ENROLLMENT_FRAME,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
@@ -354,9 +334,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: Self.clientStateType(from: generateClientState),
-            shouldRetrieveAuthenticationFrame: options.shouldRetrieveAuthenticationFrame ?? BiomAuthConfig.DEFAULT_SHOULD_RETRIEVE_AUTHENTICATION_FRAME,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
-            shouldRemovePin: options.shouldRemovePin,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
@@ -548,17 +526,10 @@ extension JourneyConstants {
     public static let cameraDelaySeconds = "cameraDelaySeconds"
     public static let showSuccessFeedback = "showSuccessFeedback"
     public static let customSecret = "customSecret"
-    /// Server-side key contains an intentional typo (`"shuold"`) — must match the payload exactly.
-    public static let shouldRetrieveEnrollmentFrame = "shuoldRetrieveEnrollmentFrame"
     public static let showFailureFeedback = "showFailureFeedback"
     public static let showInstructionsScreen = "showInstructionsScreen"
     public static let presentation = "presentation"
     public static let numberOfEnrollmentCircuits = "numberOfEnrollmentCircuits"
-    public static let shouldRetrieveSecret = "shouldRetrieveSecret"
-    public static let shouldDeleteSecret = "shouldDeleteSecret"
-    /// Server-side key contains an intentional typo (`"shouldRetrive"`) — must match the payload exactly.
-    public static let shouldRetrieveAuthenticationFrame = "shouldRetriveAuthenticationFrame"
     public static let presentationStyle = "presentationStyle"
-    public static let shouldRemovePin = "shouldRemovePin"
 }
 #endif

@@ -49,46 +49,29 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: JourneyConstants.boolTrue,
             JourneyConstants.showSuccessFeedback: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveEnrollmentFrame: JourneyConstants.boolTrue,
             JourneyConstants.showFailureFeedback: JourneyConstants.boolTrue,
             JourneyConstants.showInstructionsScreen: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveSecret: JourneyConstants.boolTrue,
-            JourneyConstants.shouldDeleteSecret: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveAuthenticationFrame: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRemovePin: JourneyConstants.boolTrue
         ])
         XCTAssertEqual(opts.livenessEnvironmentAware, true)
         XCTAssertEqual(opts.showSuccessFeedback, true)
-        XCTAssertEqual(opts.shouldRetrieveEnrollmentFrame, true)
         XCTAssertEqual(opts.showFailureFeedback, true)
         XCTAssertEqual(opts.showInstructionsScreen, true)
-        XCTAssertTrue(opts.shouldRetrieveSecret)
-        XCTAssertTrue(opts.shouldDeleteSecret)
-        XCTAssertEqual(opts.shouldRetrieveAuthenticationFrame, true)
-        XCTAssertTrue(opts.shouldRemovePin)
     }
 
     func testBoolFalseWhenKeyAbsent() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
         XCTAssertNil(opts.livenessEnvironmentAware)
         XCTAssertNil(opts.showSuccessFeedback)
-        XCTAssertNil(opts.shouldRetrieveEnrollmentFrame)
         XCTAssertNil(opts.showFailureFeedback)
         XCTAssertNil(opts.showInstructionsScreen)
-        XCTAssertFalse(opts.shouldRetrieveSecret)
-        XCTAssertFalse(opts.shouldDeleteSecret)
-        XCTAssertNil(opts.shouldRetrieveAuthenticationFrame)
-        XCTAssertFalse(opts.shouldRemovePin)
     }
 
     func testBoolFalseForNonTrueString() {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: "false",
-            JourneyConstants.shouldRemovePin: "TRUE",   // case-sensitive — Bool("TRUE") == nil
             JourneyConstants.showSuccessFeedback: "false"
         ])
         XCTAssertEqual(opts.livenessEnvironmentAware, false)
-        XCTAssertFalse(opts.shouldRemovePin)
         XCTAssertEqual(opts.showSuccessFeedback, false)
     }
 
@@ -447,11 +430,6 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
         XCTAssertEqual(JourneyConstants.mobileSDKOptions, "mobileSDKOptions")
     }
 
-    func testMobileSDKOptionKeyTypos() {
-        // These two keys carry intentional server-side typos — assert the exact values are preserved.
-        XCTAssertEqual(JourneyConstants.shouldRetrieveEnrollmentFrame, "shuoldRetrieveEnrollmentFrame")
-        XCTAssertEqual(JourneyConstants.shouldRetrieveAuthenticationFrame, "shouldRetriveAuthenticationFrame")
-    }
 }
 
 // MARK: - RecognizeOperationTypeTests
