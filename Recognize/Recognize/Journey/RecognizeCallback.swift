@@ -10,7 +10,7 @@
 
 #if canImport(KeylessSDK)
 import Foundation
-import KeylessSDK
+@preconcurrency import KeylessSDK
 import PingOrchestrate
 import PingJourneyPlugin
 

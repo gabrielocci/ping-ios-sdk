@@ -50,8 +50,6 @@
 		3A8532332BE2D5D800F8619D /* DavinciView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8532322BE2D5D800F8619D /* DavinciView.swift */; };
 		3ACD90E12BE586BC00DABCE6 /* DavinciViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ACD90E02BE586BC00DABCE6 /* DavinciViewModel.swift */; };
 		55C9F57A2FAB76386795C574 /* PingRecognize.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 53B74567F879D1C1EA250FC5 /* PingRecognize.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		76A3F1F8300771070095742A /* KeylessSDK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76A3F1F7300771070095742A /* KeylessSDK.xcframework */; };
-		76A3F1F9300771070095742A /* KeylessSDK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 76A3F1F7300771070095742A /* KeylessSDK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7C28B72465E040C4A5AD9329 /* ConfigurationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218B6391FB004507BA8CE637 /* ConfigurationEditorView.swift */; };
 		8D89EC9CDC9340978782F580 /* ConfigurationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5532A35B47CF4B98B69361B4 /* ConfigurationListView.swift */; };
 		9741A96DF1548BD5E5A6EE6D /* AuthMigrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22FC525493FF7344F586E3C1 /* AuthMigrationView.swift */; };
@@ -622,7 +620,6 @@
 				A5560CA52CFE4EDA0076CA8D /* PingOidc.framework in Embed Frameworks */,
 				A569DBED2E78A78800F4D7A8 /* PingDeviceProfile.framework in Embed Frameworks */,
 				1B7C4A032EAABAA300E3C0AC /* PingPush.framework in Embed Frameworks */,
-				76A3F1F9300771070095742A /* KeylessSDK.xcframework in Embed Frameworks */,
 				1BC529002F86CFD20088DD90 /* PingAuthMigration.framework in Embed Frameworks */,
 				A5560CA92CFE4EDA0076CA8D /* PingStorage.framework in Embed Frameworks */,
 				A58CFBD12EB0046B007C4A31 /* PingReCaptchaEnterprise.framework in Embed Frameworks */,
@@ -703,7 +700,6 @@
 		3ACD90E02BE586BC00DABCE6 /* DavinciViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DavinciViewModel.swift; sourceTree = "<group>"; };
 		5532A35B47CF4B98B69361B4 /* ConfigurationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationListView.swift; sourceTree = "<group>"; };
 		5DA9E66BCA836868D259F9D7 /* Recognize.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Recognize.xcodeproj; path = ../../Recognize/Recognize.xcodeproj; sourceTree = "<group>"; };
-		76A3F1F7300771070095742A /* KeylessSDK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KeylessSDK.xcframework; path = "../../../../../Library/Developer/Xcode/DerivedData/Ping-gcgjqfyjolnojofjtxuuigjyxylr/SourcePackages/registry/downloads/keyless/mobile-sdk/5.8.12/KeylessSDK.xcframework"; sourceTree = "<group>"; };
 		A50FE2672FCE78D20010DC0D /* Configs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Configs; sourceTree = "<group>"; };
 		A525E7AF2DD7647200B02C17 /* PingExternalIdP.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingExternalIdP.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A525E7B02DD7647200B02C17 /* PingExternalIdPApple.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PingExternalIdPApple.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -832,7 +828,6 @@
 				A525E7B92DD7647200B02C17 /* PingExternalIdPGoogle.framework in Frameworks */,
 				ECA540BD2D6DD7D6002B35D4 /* AppTrackingTransparency.framework in Frameworks */,
 				1BC528FF2F86CFD20088DD90 /* PingAuthMigration.framework in Frameworks */,
-				76A3F1F8300771070095742A /* KeylessSDK.xcframework in Frameworks */,
 				A525E7B52DD7647200B02C17 /* PingExternalIdPApple.framework in Frameworks */,
 				EC92B3912DA03E0700E4246D /* SVGKitSwift in Frameworks */,
 				A56742022EE1EE15009D29B9 /* PingCommons.framework in Frameworks */,
@@ -1079,7 +1074,6 @@
 		3A5441642BCDF17600385131 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				76A3F1F7300771070095742A /* KeylessSDK.xcframework */,
 				EC5C81F22ED08C2D00C91570 /* PingDavinci.framework */,
 				EC14473D2EA65CCE00882AF2 /* PingFido.framework */,
 				ECD5A3132E90218200A27205 /* PingFido2.framework */,
