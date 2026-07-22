@@ -1,5 +1,5 @@
 {
-  "originHash" : "5573d0db998b96809b0f99f32cb3b261dd763a348512411cade1c49d3402050e",
+  "originHash" : "f518d0473dc0bb3005634dfd9aca0bfcd87ddd1d893e31f6e2cb519dda143cbe",
   "pins" : [
     {
       "identity" : "app-check",
@@ -78,7 +78,7 @@
       "kind" : "registry",
       "location" : "",
       "state" : {
-        "version" : "5.8.12"
+        "version" : "6.0.0"
       }
     },
     {

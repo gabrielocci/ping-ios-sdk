@@ -59,7 +59,7 @@ let package = Package(
         .package(url: "https://github.com/facebook/facebook-ios-sdk.git", "16.3.1"..<"16.4.0"),
         .package(url: "https://github.com/google/GoogleSignIn-iOS.git", exact: "9.0.0"),
         .package(url: "https://github.com/GoogleCloudPlatform/recaptcha-enterprise-mobile-sdk.git", "18.8.1"..<"18.9.0"),
-        .package(id: "keyless.mobile-sdk", from: "5.7.3")
+        .package(id: "keyless.mobile-sdk", from: "6.0.0")
     ],
     targets: [
         // MARK: - Foundation Targets (No dependencies)
@@ -327,7 +327,8 @@ let package = Package(
             ],
             path: "Recognize/Recognize",
             exclude: ["Recognize.h"],
-            resources: [.copy("PrivacyInfo.xcprivacy")]
+            resources: [.copy("PrivacyInfo.xcprivacy")],
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 .testTarget(
     name: "RecognizeTests",

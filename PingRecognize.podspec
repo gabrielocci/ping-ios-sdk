@@ -35,5 +35,5 @@ Pod::Spec.new do |s|
   }
 
   s.ios.dependency 'PingJourneyPlugin', '~> 2.0.0'
-  s.ios.dependency 'KeylessSDK', '~> 5.8'
+  s.ios.dependency 'KeylessSDK', '~> 6.0'
 end
