@@ -18,23 +18,24 @@ import PingJourneyPlugin
 final class RecognizeErrorTests: XCTestCase {
 
     func testInitStoresMessage() {
-        let error = RecognizeError("something went wrong")
+        let error = RecognizeError("something went wrong", code: 30000)
         XCTAssertEqual(error.message, "something went wrong")
+        XCTAssertEqual(error.code, 30000)
     }
 
     func testErrorDescriptionMatchesMessage() {
-        let error = RecognizeError("network timeout")
+        let error = RecognizeError("network timeout", code: 30005)
         XCTAssertEqual(error.errorDescription, "network timeout")
     }
 
     func testEmptyMessageIsAllowed() {
-        let error = RecognizeError("")
+        let error = RecognizeError("", code: 0)
         XCTAssertEqual(error.message, "")
         XCTAssertEqual(error.errorDescription, "")
     }
 
     func testConformsToLocalizedError() {
-        let error: LocalizedError = RecognizeError("test")
+        let error: LocalizedError = RecognizeError("test", code: 0)
         XCTAssertEqual(error.errorDescription, "test")
     }
 }
@@ -49,46 +50,29 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: JourneyConstants.boolTrue,
             JourneyConstants.showSuccessFeedback: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveEnrollmentFrame: JourneyConstants.boolTrue,
             JourneyConstants.showFailureFeedback: JourneyConstants.boolTrue,
             JourneyConstants.showInstructionsScreen: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveSecret: JourneyConstants.boolTrue,
-            JourneyConstants.shouldDeleteSecret: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRetrieveAuthenticationFrame: JourneyConstants.boolTrue,
-            JourneyConstants.shouldRemovePin: JourneyConstants.boolTrue
         ])
         XCTAssertEqual(opts.livenessEnvironmentAware, true)
         XCTAssertEqual(opts.showSuccessFeedback, true)
-        XCTAssertEqual(opts.shouldRetrieveEnrollmentFrame, true)
         XCTAssertEqual(opts.showFailureFeedback, true)
         XCTAssertEqual(opts.showInstructionsScreen, true)
-        XCTAssertTrue(opts.shouldRetrieveSecret)
-        XCTAssertTrue(opts.shouldDeleteSecret)
-        XCTAssertEqual(opts.shouldRetrieveAuthenticationFrame, true)
-        XCTAssertTrue(opts.shouldRemovePin)
     }
 
     func testBoolFalseWhenKeyAbsent() {
         let opts = RecognizeMobileSDKOptions(raw: [:])
         XCTAssertNil(opts.livenessEnvironmentAware)
         XCTAssertNil(opts.showSuccessFeedback)
-        XCTAssertNil(opts.shouldRetrieveEnrollmentFrame)
         XCTAssertNil(opts.showFailureFeedback)
         XCTAssertNil(opts.showInstructionsScreen)
-        XCTAssertFalse(opts.shouldRetrieveSecret)
-        XCTAssertFalse(opts.shouldDeleteSecret)
-        XCTAssertNil(opts.shouldRetrieveAuthenticationFrame)
-        XCTAssertFalse(opts.shouldRemovePin)
     }
 
     func testBoolFalseForNonTrueString() {
         let opts = RecognizeMobileSDKOptions(raw: [
             JourneyConstants.livenessEnvironmentAware: "false",
-            JourneyConstants.shouldRemovePin: "TRUE",   // case-sensitive — Bool("TRUE") == nil
             JourneyConstants.showSuccessFeedback: "false"
         ])
         XCTAssertEqual(opts.livenessEnvironmentAware, false)
-        XCTAssertFalse(opts.shouldRemovePin)
         XCTAssertEqual(opts.showSuccessFeedback, false)
     }
 
@@ -245,19 +229,19 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
     func testInitValueGenerateClientStateString() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: "true")
-        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+        XCTAssertTrue(callback.generateClientState)
     }
 
     func testInitValueGenerateClientStateBoolTrue() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: true)
-        XCTAssertEqual(callback.generateClientState, JourneyConstants.boolTrue)
+        XCTAssertTrue(callback.generateClientState)
     }
 
     func testInitValueGenerateClientStateBoolFalse() {
         let callback = RecognizeCallback()
         callback.initValue(name: JourneyConstants.generateClientState, value: false)
-        XCTAssertEqual(callback.generateClientState, "")
+        XCTAssertFalse(callback.generateClientState)
     }
 
     func testInitValueClientState() {
@@ -447,11 +431,6 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
         XCTAssertEqual(JourneyConstants.mobileSDKOptions, "mobileSDKOptions")
     }
 
-    func testMobileSDKOptionKeyTypos() {
-        // These two keys carry intentional server-side typos — assert the exact values are preserved.
-        XCTAssertEqual(JourneyConstants.shouldRetrieveEnrollmentFrame, "shuoldRetrieveEnrollmentFrame")
-        XCTAssertEqual(JourneyConstants.shouldRetrieveAuthenticationFrame, "shouldRetriveAuthenticationFrame")
-    }
 }
 
 // MARK: - EnrollWithClientStateTests

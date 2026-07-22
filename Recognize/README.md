@@ -1,19 +1,63 @@
-[![Ping Identity](https://www.pingidentity.com/content/dam/picr/nav/Ping-Logo-2.svg)](https://github.com/ForgeRock/ping-ios-sdk)
+[![Swift Version](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
+[![iOS Version](https://img.shields.io/badge/iOS-16.0+-blue.svg)](https://developer.apple.com/ios/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../LICENSE)
 
-# Recognize Module: PingOne Recognize Biometric Authentication
+![Ping Identity](https://www.pingidentity.com/content/dam/picr/nav/Ping-Logo-2.svg)
+
+# PingRecognize
+
+> [!NOTE]
+> **This module is a wrapper for the PingOne Recognize biometric SDK (powered by Keyless). Its purpose is to facilitate integration between your application and PingOne services as part of an Advanced Identity Cloud / PingAM Journey. The Recognize service is invoked server-side as a step within the orchestration layer — the business logic for triggering enrollment or authentication resides on the server, so you can update it without releasing a new client build.**
+
+## Getting Started
+
+### Prerequisites
+
+- Ping Advanced Identity Cloud / PingAM [Supported Versions](https://support.pingidentity.com/s/article/Ping-Identity-EOL-Tracker)
+- iOS 16.0+
+- Swift 6.0+
+- Xcode 15+
+- A Journey configured with a **PingOne Recognize** node
+
+### Installation
+
+To integrate the module into your iOS project, add the following dependency to your `Package.swift` or `Podfile`.
+
+#### Swift Package Manager
+
+```swift
+.package(url: "https://github.com/ForgeRock/ping-ios-sdk.git", from: "<version>")
+```
+
+Then add the `PingRecognize` product to your target's dependencies.
+
+#### CocoaPods
+
+```ruby
+pod 'PingRecognize', '~> <version>'
+pod 'PingJourney',   '~> <version>'
+```
+
+Replace `<version>` with the latest version of the SDK.
+
+### Import the Module
+
+```swift
+import PingRecognize
+```
 
 ## Overview
 
-The `PingRecognize` module integrates [PingOne Recognize](https://docs.pingidentity.com/pingoneaic/latest/) (powered by the Keyless biometric SDK) into Journey-based authentication flows on iOS. It handles both **enrollment** (registering a user's biometric) and **authentication** (verifying a returning user) through standard Journey callbacks.
+The `PingRecognize` module integrates PingOne Recognize biometric authentication into Journey-based flows on iOS. It handles both **enrollment** (registering a user's biometric) and **authentication** (verifying a returning user) through a single callback returned by the Journey framework.
 
-The module exposes a single callback returned automatically by the Journey framework, which handles both operations based on the `operationType` field:
+The `operationType` output field from the server determines which operation is performed:
 
 | `operationType` | Purpose                           |
 |-----------------|-----------------------------------|
 | `ENROLL`        | Biometric enrollment ceremony     |
 | `AUTHENTICATE`  | Biometric authentication ceremony |
 
-All server-supplied configuration fields (API key, host, transaction data, liveness settings, etc.) are parsed automatically from the Journey response — **you only need to call `execute()`**.
+All server-supplied configuration (API key, host, liveness settings, etc.) is parsed automatically — **you only need to call `execute()`**.
 
 ```mermaid
 sequenceDiagram
@@ -34,41 +78,7 @@ sequenceDiagram
     Journey ->> App: SuccessNode
 ```
 
----
-
-## Requirements
-
-- iOS 16.0+
-- Swift 6.0+
-
----
-
-## Installation
-
-### Swift Package Manager
-
-```swift
-.product(name: "PingRecognize", package: "ping-ios-sdk")
-```
-
-### CocoaPods
-
-```ruby
-pod 'PingRecognize', '~> 2.0.0'
-pod 'PingJourney',   '~> 2.0.0'
-```
-
----
-
-## Prerequisites: AIC Journey Configuration
-
-Before writing any iOS code, configure a Journey in AIC that includes a **PingOne Recognize** node. The node produces a `PingOneRecognizeCallback` with either `operationType = "ENROLL"` or `operationType = "AUTHENTICATE"` depending on the flow.
-
-The node also provides all SDK parameters (API key, host, liveness configuration, etc.) as output fields — the SDK maps these to the Keyless `BiomEnrollConfig` / `BiomAuthConfig` automatically.
-
----
-
-## Getting Started
+## Usage
 
 ### 1. Register the Callback
 
@@ -105,6 +115,9 @@ for await node in journey.start() {
                     await continueNode.next()
                 case .failure(let error):
                     print("Recognize failed: \(error.localizedDescription)")
+                    if let recognizeError = error as? RecognizeError {
+                        print("Error code: \(recognizeError.code)")
+                    }
                 }
             }
         }
@@ -118,57 +131,91 @@ for await node in journey.start() {
 }
 ```
 
----
-
 ## Enrollment
 
-`RecognizeCallback.execute()` detects `operationType == .enroll` and performs the full biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
+`RecognizeCallback.execute()` detects `operationType == .enroll` and performs the biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
 
-The callback automatically maps every server-supplied field to `BiomEnrollConfig`:
+The callback automatically maps server-supplied fields to `BiomEnrollConfig`:
 
-| Callback / `mobileSDKOptions` field              | `BiomEnrollConfig` property           |
-|--------------------------------------------------|---------------------------------------|
-| `transactionData`                                | `jwtSigningInfo`                      |
-| `clientState`                                    | `clientState`                         |
-| `generateClientState`                            | `generatingClientState`               |
-| `mobileSDKOptions.livenessConfiguration`         | `livenessConfiguration`               |
-| `mobileSDKOptions.livenessEnvironmentAware`      | `livenessEnvironmentAware`            |
-| `mobileSDKOptions.operationInfoId`               | `operationInfo.id`                    |
-| `mobileSDKOptions.operationInfoPayload`          | `operationInfo.payload`               |
-| `mobileSDKOptions.operationInfoExternalUserId`   | `operationInfo.externalUserId`        |
-| `mobileSDKOptions.cameraDelaySeconds`            | `cameraDelaySeconds`                  |
-| `mobileSDKOptions.customSecret`                  | `customSecret`                        |
-| `mobileSDKOptions.shouldRetrieveEnrollmentFrame` | `shouldRetrieveEnrollmentFrame`       |
-| `mobileSDKOptions.showSuccessFeedback`           | `showSuccessFeedback`                 |
-| `mobileSDKOptions.showFailureFeedback`           | `showFailureFeedback`                 |
-| `mobileSDKOptions.showInstructionsScreen`        | `showInstructionsScreen`              |
+| Callback / `mobileSDKOptions` field            | `BiomEnrollConfig` property    |
+|------------------------------------------------|--------------------------------|
+| `transactionData`                              | `jwtSigningInfo`               |
+| `clientState`                                  | `clientState`                  |
+| `generateClientState`                          | `generatingClientState`        |
+| `mobileSDKOptions.livenessConfiguration`       | `livenessConfiguration`        |
+| `mobileSDKOptions.livenessEnvironmentAware`    | `livenessEnvironmentAware`     |
+| `mobileSDKOptions.operationInfoId`             | `operationInfo.id`             |
+| `mobileSDKOptions.operationInfoPayload`        | `operationInfo.payload`        |
+| `mobileSDKOptions.operationInfoExternalUserId` | `operationInfo.externalUserId` |
+| `mobileSDKOptions.cameraDelaySeconds`          | `cameraDelaySeconds`           |
+| `mobileSDKOptions.showSuccessFeedback`         | `showSuccessFeedback`          |
+| `mobileSDKOptions.showFailureFeedback`         | `showFailureFeedback`          |
+| `mobileSDKOptions.showInstructionsScreen`      | `showInstructionsScreen`       |
+| `mobileSDKOptions.presentation`                | `presentationStyle`            |
+| `mobileSDKOptions.numberOfEnrollmentCircuits`  | `numberOfEnrollmentCircuits`   |
 
-On success, `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState` are automatically populated and submitted to the server.
+On success, the following input fields are automatically populated and submitted to the server:
+
+| Input field                    | Source                              |
+|--------------------------------|-------------------------------------|
+| `IDToken1recognizeId`          | `enrollmentResult.keylessId`        |
+| `IDToken1signedJwt`            | `enrollmentResult.signedJwt`        |
+| `IDToken1clientState`          | `enrollmentResult.clientState`      |
+| `IDToken1devicePublicSigningKey` | `Keyless.getDevicePublicSigningKey()` |
 
 ---
 
 ## Authentication
 
-`RecognizeCallback.execute()` detects `operationType == .authenticate` and performs the full biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
+`RecognizeCallback.execute()` detects `operationType == .authenticate` and performs the biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
 
 The callback automatically maps server-supplied fields to `BiomAuthConfig`:
 
-| Callback / `mobileSDKOptions` field                  | `BiomAuthConfig` property             |
-|------------------------------------------------------|---------------------------------------|
-| `transactionData`                                    | `jwtSigningInfo`                      |
-| `generateClientState`                                | `generatingClientState`               |
-| `mobileSDKOptions.livenessConfiguration`             | `livenessConfiguration`               |
-| `mobileSDKOptions.livenessEnvironmentAware`          | `livenessEnvironmentAware`            |
-| `mobileSDKOptions.operationInfoId`                   | `operationInfo.id`                    |
-| `mobileSDKOptions.operationInfoPayload`              | `operationInfo.payload`               |
-| `mobileSDKOptions.operationInfoExternalUserId`       | `operationInfo.externalUserId`        |
-| `mobileSDKOptions.cameraDelaySeconds`                | `cameraDelaySeconds`                  |
-| `mobileSDKOptions.showSuccessFeedback`               | `showSuccessFeedback`                 |
-| `mobileSDKOptions.shouldRetrieveAuthenticationFrame` | `shouldRetrieveAuthenticationFrame`   |
-| `mobileSDKOptions.shouldRemovePin`                   | `shouldRemovePin`                     |
-| `mobileSDKOptions.presentationStyle`                 | `presentationStyle`                   |
+| Callback / `mobileSDKOptions` field            | `BiomAuthConfig` property      |
+|------------------------------------------------|--------------------------------|
+| `transactionData`                              | `jwtSigningInfo`               |
+| `generateClientState`                          | `generatingClientState`        |
+| `mobileSDKOptions.livenessConfiguration`       | `livenessConfiguration`        |
+| `mobileSDKOptions.livenessEnvironmentAware`    | `livenessEnvironmentAware`     |
+| `mobileSDKOptions.operationInfoId`             | `operationInfo.id`             |
+| `mobileSDKOptions.operationInfoPayload`        | `operationInfo.payload`        |
+| `mobileSDKOptions.operationInfoExternalUserId` | `operationInfo.externalUserId` |
+| `mobileSDKOptions.cameraDelaySeconds`          | `cameraDelaySeconds`           |
+| `mobileSDKOptions.showSuccessFeedback`         | `showSuccessFeedback`          |
+| `mobileSDKOptions.presentationStyle`           | `presentationStyle`            |
 
-On success, `IDToken1signedJwt` and `IDToken1clientState` are automatically submitted.
+On success, the following input fields are automatically populated and submitted to the server:
+
+| Input field                      | Source                              |
+|----------------------------------|-------------------------------------|
+| `IDToken1signedJwt`              | `authResult.signedJwt`              |
+| `IDToken1clientState`            | `authResult.clientState`            |
+| `IDToken1devicePublicSigningKey` | `Keyless.getDevicePublicSigningKey()` |
+
+### clientState enrollment restore
+
+When the server supplies a `clientState` output field alongside `operationType == .authenticate`, `execute()` automatically handles the enrollment-restore path:
+
+1. Calls `Keyless.validateUserDeviceActive()` to check enrollment status.
+2. If the user is **already enrolled** — runs normal authentication.
+3. If the user is **not enrolled** — runs enrollment using the server-supplied `clientState`.
+
+No additional code is required from the integrator.
+
+---
+
+## Error Handling
+
+On failure, `execute()` returns `.failure(RecognizeError)` and automatically populates `IDToken1clientError` and `IDToken1clientErrorCode` before the Journey submits the response.
+
+`RecognizeError` exposes both `message` and `code` from the underlying Keyless SDK error:
+
+```swift
+case .failure(let error):
+    if let recognizeError = error as? RecognizeError {
+        print("Error \(recognizeError.code): \(recognizeError.message)")
+    }
+```
 
 ---
 
@@ -247,4 +294,6 @@ enum RecognizeState {
 
 ## License
 
-This project is licensed under the MIT license. See the [LICENSE](../LICENSE) file for details.
+This software may be modified and distributed under the terms of the MIT license. See the [LICENSE](../LICENSE) file for details.
+
+© Copyright 2025-2026 Ping Identity Corporation. All Rights Reserved
