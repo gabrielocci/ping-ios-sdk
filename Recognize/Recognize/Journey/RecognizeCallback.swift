@@ -9,6 +9,7 @@
 //
 
 #if canImport(KeylessSDK)
+import CoreGraphics
 import Foundation
 import KeylessSDK
 import PingOrchestrate
@@ -188,23 +189,27 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
     /// Configures the Keyless SDK and executes the enrollment or authentication operation.
     ///
-    /// - Returns: `.success(())` on completion, or `.failure(error)` if any step fails.
-    ///   On failure the `IDToken1clientError` input field is automatically populated.
-    public func execute() async -> Result<Void, Error> {
+    /// - Parameter retrieveSelfie: When `true`, the captured biometric frame is returned to the caller.
+    ///   The selfie is never written to the Journey callback payload. Defaults to `false`.
+    /// - Returns: `.success(selfie)` where `selfie` is non-nil only when `retrieveSelfie` is `true`
+    ///   and the Keyless SDK captured a frame. Returns `.failure(error)` if any step fails; on failure
+    ///   the `IDToken1clientError` input field is automatically populated.
+    public func execute(retrieveSelfie: Bool = false) async -> Result<CGImage?, Error> {
         do {
             try await configure()
             try Task.checkCancellation()
+            let selfie: CGImage?
             switch operationType {
             case .enroll:
-                try await enroll(options: mobileSDKOptions)
+                selfie = try await enroll(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
             case .authenticate:
                 if !clientState.isEmpty {
-                    try await enrollWithClientState(clientState, options: mobileSDKOptions)
+                    selfie = try await enrollWithClientState(clientState, options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
                 } else {
-                    try await authenticate(options: mobileSDKOptions)
+                    selfie = try await authenticate(options: mobileSDKOptions, retrieveSelfie: retrieveSelfie)
                 }
             }
-            return .success(())
+            return .success(selfie)
         } catch {
             let message = error.localizedDescription.isEmpty
                 ? JourneyConstants.clientError
@@ -278,7 +283,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
     ///
     /// On success, populates `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState`.
-    internal func enroll(options: RecognizeMobileSDKOptions) async throws {
+    /// - Parameter retrieveSelfie: When `true`, instructs the Keyless SDK to capture the enrollment
+    ///   frame and returns it to the caller. The frame is never written to the Journey payload.
+    /// - Returns: The enrollment frame when `retrieveSelfie` is `true` and the SDK captured one; `nil` otherwise.
+    @discardableResult
+    internal func enroll(options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -295,13 +304,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -311,7 +321,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
@@ -327,7 +337,11 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     ///
     /// On success, populates `IDToken1signedJwt`, `IDToken1clientState`, and (when available)
     /// `IDToken1devicePublicSigningKey`.
-    internal func authenticate(options: RecognizeMobileSDKOptions) async throws {
+    /// - Parameter retrieveSelfie: When `true`, instructs the Keyless SDK to capture the authentication
+    ///   frame and returns it to the caller. The frame is never written to the Journey payload.
+    /// - Returns: The authentication frame when `retrieveSelfie` is `true` and the SDK captured one; `nil` otherwise.
+    @discardableResult
+    internal func authenticate(options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -340,13 +354,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveAuthenticationFrame: retrieveSelfie,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             Keyless.authenticate(configuration: authConfig) { [weak self] result in
                 switch result {
                 case .success(let response):
@@ -355,7 +370,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: retrieveSelfie ? response.authenticationFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
@@ -373,7 +388,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// - If `validateUserDeviceActive` returns nil the user is already enrolled — runs normal authentication.
     /// - If `validateUserDeviceActive` returns `userNotEnrolled` — calls `enroll(clientState:)`.
     /// - Any other error from either call is propagated as a `RecognizeError`.
-    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws {
+    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions, retrieveSelfie: Bool = false) async throws -> CGImage? {
         // Step 1: validate — nil means already enrolled (skip), userNotEnrolled means proceed, anything else is an error.
         let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
             Keyless.validateUserDeviceActive { error in
@@ -388,8 +403,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             // userNotEnrolled — fall through to enroll below.
         } else {
             // nil — user is already enrolled, run normal authentication.
-            try await authenticate(options: options)
-            return
+            return try await authenticate(options: options, retrieveSelfie: retrieveSelfie)
         }
 
         // Step 2: user is not enrolled — enroll with the server-supplied clientState.
@@ -400,13 +414,14 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -416,7 +431,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
                 case .failure(let error):
                     continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 }
