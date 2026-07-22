@@ -63,10 +63,6 @@ public struct RecognizeMobileSDKOptions: Sendable {
     /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
     public var customSecret: String { raw[JourneyConstants.customSecret] ?? "" }
 
-    /// Whether to retrieve the enrollment frame image.
-    /// - Note: The server-side key intentionally contains a typo (`"shuold"`) which is preserved.
-    public var shouldRetrieveEnrollmentFrame: Bool? { raw[JourneyConstants.shouldRetrieveEnrollmentFrame].flatMap(Bool.init) }
-
     /// Whether to show a failure feedback overlay when enrollment fails.
     public var showFailureFeedback: Bool? { raw[JourneyConstants.showFailureFeedback].flatMap(Bool.init) }
 
@@ -81,24 +77,9 @@ public struct RecognizeMobileSDKOptions: Sendable {
 
     // MARK: Authentication-only options
 
-    /// Whether to retrieve the stored biometric secret during authentication.
-    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
-    public var shouldRetrieveSecret: Bool { raw[JourneyConstants.shouldRetrieveSecret] == JourneyConstants.boolTrue }
-
-    /// Whether to delete the stored biometric secret after successful authentication.
-    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
-    public var shouldDeleteSecret: Bool { raw[JourneyConstants.shouldDeleteSecret] == JourneyConstants.boolTrue }
-
-    /// Whether to retrieve the authentication frame image.
-    /// - Note: The server-side key intentionally contains a typo (`"shouldRetrive"`) which is preserved.
-    public var shouldRetrieveAuthenticationFrame: Bool? { raw[JourneyConstants.shouldRetrieveAuthenticationFrame].flatMap(Bool.init) }
-
     /// The UI presentation style for authentication (e.g. `"CAMERA_PREVIEW"`).
     public var presentationStyle: String { raw[JourneyConstants.presentationStyle] ?? "" }
 
-    /// Whether to remove the PIN binding after authentication.
-    // No DEFAULT_REMOVING_PIN public constant on BiomAuthConfig — absent value treated as false.
-    public var shouldRemovePin: Bool { raw[JourneyConstants.shouldRemovePin] == JourneyConstants.boolTrue }
 }
 
 // MARK: - RecognizeCallback
@@ -155,8 +136,8 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
     /// Customer-supplied transaction data to be signed by the SDK.
     private(set) public var transactionData: String = ""
 
-    /// The `generateClientState` bool string supplied by the server (`"true"` or `"false"`).
-    private(set) public var generateClientState: String = ""
+    /// Whether the server requested generation of a new client state.
+    private(set) public var generateClientState: Bool = false
 
     /// An existing client-state payload provided by the server during enrollment restore.
     private(set) public var clientState: String = ""
@@ -191,9 +172,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             if let stringValue = value as? String { self.transactionData = stringValue }
         case JourneyConstants.generateClientState:
             if let boolValue = value as? Bool {
-                self.generateClientState = boolValue ? JourneyConstants.boolTrue : ""
+                self.generateClientState = boolValue
             } else if let stringValue = value as? String {
-                self.generateClientState = stringValue
+                self.generateClientState = Bool(stringValue) ?? false
             }
         case JourneyConstants.clientState:
             if let stringValue = value as? String { self.clientState = stringValue }
@@ -234,6 +215,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                 ? JourneyConstants.clientError
                 : error.localizedDescription
             self.error(message)
+            if let recognizeError = error as? RecognizeError {
+                setClientErrorCode(String(recognizeError.code))
+            }
             return .failure(error)
         }
     }
@@ -288,7 +272,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.configure(setupConfiguration: setupConfig) { error in
                 if let error = error {
-                    continuation.resume(throwing: RecognizeError(error.message))
+                    continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 } else {
                     continuation.resume()
                 }
@@ -319,7 +303,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
@@ -334,10 +318,13 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self?.setDevicePublicSigningKey(key)
+                    }
                     continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message))
+                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -366,10 +353,9 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             shouldRetrieveAuthenticationFrame: retrieveSelfie,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
-            shouldRemovePin: options.shouldRemovePin,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
@@ -387,7 +373,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     continuation.resume(returning: retrieveSelfie ? response.authenticationFrame : nil)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message))
+                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -412,7 +398,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
 
         if let error = validationError {
             guard case .integrationError(let ie) = error.kind, ie == .userNotEnrolled else {
-                throw RecognizeError(error.message)
+                throw RecognizeError(error.message, code: error.code)
             }
             // userNotEnrolled — fall through to enroll below.
         } else {
@@ -427,7 +413,7 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
             // BiomEnrollConfig has no DEFAULT_LIVENESS_ENV_AWARE; BiomAuthConfig's constant carries the same value.
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
-            generatingClientState: Self.clientStateType(from: generateClientState),
+            generatingClientState: generateClientState ? .backup : nil,
             shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
@@ -442,9 +428,12 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
                     if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
                     if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
                     if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self?.setDevicePublicSigningKey(key)
+                    }
                     continuation.resume(returning: retrieveSelfie ? enrollmentResult.enrollmentFrame : nil)
                 case .failure(let error):
-                    continuation.resume(throwing: RecognizeError(error.message))
+                    continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 }
             }
         }
@@ -482,13 +471,6 @@ public class RecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked 
         case "NO_CAMERA_PREVIEW": return .noCameraPreview
         default:                  return .cameraPreview
         }
-    }
-
-    /// Maps the server `generateClientState` bool string (`"true"` / `"false"`) to `ClientStateType`.
-    ///
-    /// `"true"` → `.backup`; any other value → `nil`.
-    private static func clientStateType(from string: String) -> ClientStateType? {
-        return string == JourneyConstants.boolTrue ? .backup : nil
     }
 
     /// Converts a JSON value to a `[String: String]` dictionary.
@@ -561,17 +543,10 @@ extension JourneyConstants {
     public static let cameraDelaySeconds = "cameraDelaySeconds"
     public static let showSuccessFeedback = "showSuccessFeedback"
     public static let customSecret = "customSecret"
-    /// Server-side key contains an intentional typo (`"shuold"`) — must match the payload exactly.
-    public static let shouldRetrieveEnrollmentFrame = "shuoldRetrieveEnrollmentFrame"
     public static let showFailureFeedback = "showFailureFeedback"
     public static let showInstructionsScreen = "showInstructionsScreen"
     public static let presentation = "presentation"
     public static let numberOfEnrollmentCircuits = "numberOfEnrollmentCircuits"
-    public static let shouldRetrieveSecret = "shouldRetrieveSecret"
-    public static let shouldDeleteSecret = "shouldDeleteSecret"
-    /// Server-side key contains an intentional typo (`"shouldRetrive"`) — must match the payload exactly.
-    public static let shouldRetrieveAuthenticationFrame = "shouldRetriveAuthenticationFrame"
     public static let presentationStyle = "presentationStyle"
-    public static let shouldRemovePin = "shouldRemovePin"
 }
 #endif
