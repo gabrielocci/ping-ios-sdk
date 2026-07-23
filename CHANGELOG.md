@@ -1,3 +1,7 @@
+## [UNRELEASED]
+#### Added
+- Added `MetadataCollector` to support the DaVinci SDK Integrator connector's pause/resume model, allowing the app to invoke on-device SDKs and return a result or error before the flow continues [SDKS-5142]
+
 ## [2.1.0]
 #### Added
 - Added OAuth 2.0 Device Authorization Grant (RFC 8628) support [SDKS-4785]
