@@ -330,13 +330,13 @@ let package = Package(
             resources: [.copy("PrivacyInfo.xcprivacy")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
-.testTarget(
-    name: "RecognizeTests",
-    dependencies: [
-        "PingRecognize",
-        .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
-    ],
-    path: "Recognize/RecognizeTests"
-),
+        .testTarget(
+            name: "RecognizeTests",
+            dependencies: [
+                "PingRecognize",
+                .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
+            ],
+            path: "Recognize/RecognizeTests"
+        ),
     ]
 )
