@@ -39,8 +39,6 @@ struct RecognizeCallbackView: View {
 }
 
 class RecognizeCallbackViewModel: ObservableObject {
-    @Published var isLoading: Bool = true
-
     private var task: Task<Void, Never>?
     private let callback: RecognizeCallback
     private let onNext: () -> Void
@@ -55,14 +53,22 @@ class RecognizeCallbackViewModel: ObservableObject {
     func startIfNeeded() {
         guard !hasStarted else { return }
         hasStarted = true
-        isLoading = true
 
         task = Task {
-            _ = await callback.execute()
+            let result = await callback.execute()
+            switch result {
+            case .success:
+                print("Recognize operation succeeded")
+            case .failure(let error):
+                if let recognizeError = error as? RecognizeError {
+                    print("Recognize operation failed [\(recognizeError.code)]: \(recognizeError.message)")
+                } else {
+                    print("Recognize operation failed: \(error.localizedDescription)")
+                }
+            }
 
             if !Task.isCancelled {
                 await MainActor.run {
-                    self.isLoading = false
                     self.onNext()
                 }
             }
