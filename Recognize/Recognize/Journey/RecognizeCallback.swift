@@ -11,7 +11,7 @@
 #if canImport(KeylessSDK)
 import CoreGraphics
 import Foundation
-import KeylessSDK
+@preconcurrency import KeylessSDK
 import PingOrchestrate
 import PingJourneyPlugin
 
