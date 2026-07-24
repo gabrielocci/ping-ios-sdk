@@ -170,6 +170,7 @@
 		EC92B38C2DA039C000E4246D /* AsyncSVGImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC92B38B2DA039B700E4246D /* AsyncSVGImage.swift */; };
 		EC92B38F2DA03E0700E4246D /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = EC92B38E2DA03E0700E4246D /* SVGKit */; };
 		EC92B3912DA03E0700E4246D /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC92B3902DA03E0700E4246D /* SVGKitSwift */; };
+		CAF20001FACE000000000001 /* KeylessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CAF20002FACE000000000001 /* KeylessSDK */; };
 		EC92B3932DA0422700E4246D /* DeviceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC92B3922DA0422200E4246D /* DeviceCardView.swift */; };
 		ECA540BD2D6DD7D6002B35D4 /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ECA540BC2D6DD7D6002B35D4 /* AppTrackingTransparency.framework */; };
 		ECA7D60C2F91466A000FB45F /* PollingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECA7D60A2F91466A000FB45F /* PollingView.swift */; };
@@ -854,6 +855,7 @@
 				A5560CA62CFE4EDA0076CA8D /* PingOrchestrate.framework in Frameworks */,
 				A58CFBD02EB0046B007C4A31 /* PingReCaptchaEnterprise.framework in Frameworks */,
 				1BEF0398082085F24F883D41 /* PingRecognize.framework in Frameworks */,
+				CAF20001FACE000000000001 /* KeylessSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1386,6 +1388,9 @@
 			dependencies = (
 			);
 			name = PingExample;
+			packageProductDependencies = (
+				CAF20002FACE000000000001 /* KeylessSDK */,
+			);
 			productName = PingExample;
 			productReference = 3A54412D2BCDF10900385131 /* PingExample.app */;
 			productType = "com.apple.product-type.application";
@@ -1480,6 +1485,7 @@
 			mainGroup = 3A5441242BCDF10900385131;
 			packageReferences = (
 				EC92B38D2DA03E0700E4246D /* XCRemoteSwiftPackageReference "SVGKit" */,
+				CAF20003FACE000000000001 /* XCRemoteSwiftPackageReference "keyless.mobile-sdk" */,
 			);
 			productRefGroup = 3A54412E2BCDF10900385131 /* Products */;
 			projectDirPath = "";
@@ -2328,6 +2334,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PingExample/Preview Content\"";
+				DEVELOPMENT_TEAM = GV4JX83LNW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PingExample/Info.plist;
@@ -2348,7 +2355,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pingidentity.PingExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pingi.PingExampl;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -2365,6 +2372,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PingExample/Preview Content\"";
+				DEVELOPMENT_TEAM = GV4JX83LNW;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PingExample/Info.plist;
@@ -2385,7 +2393,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pingidentity.PingExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pingi.PingExampl;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -2534,6 +2542,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CAF20003FACE000000000001 /* XCRemoteSwiftPackageReference "keyless.mobile-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "keyless.mobile-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
 		EC92B38D2DA03E0700E4246D /* XCRemoteSwiftPackageReference "SVGKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SVGKit/SVGKit";
@@ -2545,6 +2561,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CAF20002FACE000000000001 /* KeylessSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAF20003FACE000000000001 /* XCRemoteSwiftPackageReference "keyless.mobile-sdk" */;
+			productName = KeylessSDK;
+		};
 		EC92B38E2DA03E0700E4246D /* SVGKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = EC92B38D2DA03E0700E4246D /* XCRemoteSwiftPackageReference "SVGKit" */;

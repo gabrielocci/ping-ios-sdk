@@ -21,7 +21,6 @@
 		CA001005FACE000000000001 /* PingOrchestrate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; };
 		CA001006FACE000000000001 /* PingOrchestrate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CA001007FACE000000000001 /* KeylessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CA001009FACE000000000001 /* KeylessSDK */; };
-		CA001007FACE000000000003 /* KeylessSDK in Embed Frameworks */ = {isa = PBXBuildFile; productRef = CA001009FACE000000000001 /* KeylessSDK */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CA001007FACE000000000002 /* KeylessSDK in Frameworks (Tests) */ = {isa = PBXBuildFile; productRef = CA00100AFACE000000000001 /* KeylessSDK */; };
 		CA001003FACE000000000002 /* PingJourneyPlugin.framework in Frameworks (Tests) */ = {isa = PBXBuildFile; fileRef = CA001013FACE000000000001 /* PingJourneyPlugin.framework */; };
 		CA001005FACE000000000002 /* PingOrchestrate.framework in Frameworks (Tests) */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; };
@@ -46,7 +45,6 @@
 			files = (
 				CA001004FACE000000000001 /* PingJourneyPlugin.framework in Embed Frameworks */,
 				CA001006FACE000000000001 /* PingOrchestrate.framework in Embed Frameworks */,
-				CA001007FACE000000000003 /* KeylessSDK in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
