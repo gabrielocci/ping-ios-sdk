@@ -400,12 +400,12 @@ final class JourneyConstantsRecognizeTests: XCTestCase {
     }
 
     func testInputFieldKeyConstants() {
-        XCTAssertEqual(JourneyConstants.inputSignedJwt, "IDToken1signedJwt")
-        XCTAssertEqual(JourneyConstants.inputClientState, "IDToken1clientState")
-        XCTAssertEqual(JourneyConstants.inputRecognizeId, "IDToken1recognizeId")
-        XCTAssertEqual(JourneyConstants.inputDevicePublicSigningKey, "IDToken1devicePublicSigningKey")
-        XCTAssertEqual(JourneyConstants.inputClientError, "IDToken1clientError")
-        XCTAssertEqual(JourneyConstants.inputClientErrorCode, "IDToken1clientErrorCode")
+        XCTAssertEqual(JourneyConstants.inputSignedJwt, "signedJwt")
+        XCTAssertEqual(JourneyConstants.inputClientState, "clientState")
+        XCTAssertEqual(JourneyConstants.inputRecognizeId, "recognizeId")
+        XCTAssertEqual(JourneyConstants.inputDevicePublicSigningKey, "devicePublicSigningKey")
+        XCTAssertEqual(JourneyConstants.inputClientError, "clientError")
+        XCTAssertEqual(JourneyConstants.inputClientErrorCode, "clientErrorCode")
     }
 
     func testBoolTrueConstant() {

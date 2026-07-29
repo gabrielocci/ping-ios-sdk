@@ -174,34 +174,44 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
     // MARK: - Input Helpers
 
-    /// Writes the error message into the `IDToken1clientError` input field.
+    /// Writes the error message into the `clientError` input field (suffix match).
     public func error(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputClientError)
+        updateInputValue(value, forSuffix: JourneyConstants.inputClientError)
     }
 
-    /// Sets the signed JWT returned by the Keyless SDK into the `IDToken1signedJwt` input field.
+    /// Sets the signed JWT returned by the Keyless SDK into the `signedJwt` input field.
     public func setSignedJwt(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputSignedJwt)
+        updateInputValue(value, forSuffix: JourneyConstants.inputSignedJwt)
     }
 
-    /// Sets the client state returned by the Keyless SDK into the `IDToken1clientState` input field.
+    /// Sets the client state returned by the Keyless SDK into the `clientState` input field.
     public func setClientState(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputClientState)
+        updateInputValue(value, forSuffix: JourneyConstants.inputClientState)
     }
 
-    /// Sets the Recognize user ID into the `IDToken1recognizeId` input field.
+    /// Sets the Recognize user ID into the `recognizeId` input field.
     public func setRecognizeId(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputRecognizeId)
+        updateInputValue(value, forSuffix: JourneyConstants.inputRecognizeId)
     }
 
-    /// Sets the device public signing key into the `IDToken1devicePublicSigningKey` input field.
+    /// Sets the device public signing key into the `devicePublicSigningKey` input field.
     public func setDevicePublicSigningKey(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputDevicePublicSigningKey)
+        updateInputValue(value, forSuffix: JourneyConstants.inputDevicePublicSigningKey)
     }
 
-    /// Sets a client error code into the `IDToken1clientErrorCode` input field.
+    /// Sets a client error code into the `clientErrorCode` input field.
     public func setClientErrorCode(_ value: String) {
-        _ = input(value, forKey: JourneyConstants.inputClientErrorCode)
+        updateInputValue(value, forSuffix: JourneyConstants.inputClientErrorCode)
+    }
+
+    /// Writes `value` into the first input whose `name` ends with `suffix`.
+    private func updateInputValue(_ value: String, forSuffix suffix: String) {
+        guard var inputArray = json[JourneyConstants.input] as? [[String: Any]] else { return }
+        guard let index = inputArray.firstIndex(where: {
+            ($0[JourneyConstants.name] as? String)?.hasSuffix(suffix) ?? false
+        }) else { return }
+        inputArray[index][JourneyConstants.value] = value
+        json[JourneyConstants.input] = inputArray
     }
 
     // MARK: - Shared Biometric Operations
@@ -326,18 +336,18 @@ extension JourneyConstants {
     public static let boolTrue = "true"
     /// The canonical string representation of boolean `false` as sent by the server.
     public static let boolFalse = "false"
-    /// Input field key for the signed JWT produced by the Keyless SDK.
-    public static let inputSignedJwt = "IDToken1signedJwt"
-    /// Input field key for the client state produced by the Keyless SDK.
-    public static let inputClientState = "IDToken1clientState"
-    /// Input field key for the Recognize user ID produced during enrollment.
-    public static let inputRecognizeId = "IDToken1recognizeId"
-    /// Input field key for the device public signing key retrieved after authentication.
-    public static let inputDevicePublicSigningKey = "IDToken1devicePublicSigningKey"
-    /// Input field key for the client error message.
-    public static let inputClientError = "IDToken1clientError"
-    /// Input field key for a structured client error code.
-    public static let inputClientErrorCode = "IDToken1clientErrorCode"
+    /// Input field suffix for the signed JWT produced by the Keyless SDK.
+    public static let inputSignedJwt = "signedJwt"
+    /// Input field suffix for the client state produced by the Keyless SDK.
+    public static let inputClientState = "clientState"
+    /// Input field suffix for the Recognize user ID produced during enrollment.
+    public static let inputRecognizeId = "recognizeId"
+    /// Input field suffix for the device public signing key retrieved after authentication.
+    public static let inputDevicePublicSigningKey = "devicePublicSigningKey"
+    /// Input field suffix for the client error message.
+    public static let inputClientError = "clientError"
+    /// Input field suffix for a structured client error code.
+    public static let inputClientErrorCode = "clientErrorCode"
 }
 
 // MARK: - JourneyConstants (Recognize output field keys + defaults)
