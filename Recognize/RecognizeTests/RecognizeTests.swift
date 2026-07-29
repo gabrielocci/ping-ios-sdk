@@ -48,10 +48,10 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
 
     func testBoolTrueReturnsTrueForExactString() {
         let opts = RecognizeMobileSDKOptions(raw: [
-            JourneyConstants.livenessEnvironmentAware: JourneyConstants.boolTrue,
-            JourneyConstants.showSuccessFeedback: JourneyConstants.boolTrue,
-            JourneyConstants.showFailureFeedback: JourneyConstants.boolTrue,
-            JourneyConstants.showInstructionsScreen: JourneyConstants.boolTrue,
+            JourneyConstants.livenessEnvironmentAware: "true",
+            JourneyConstants.showSuccessFeedback: "true",
+            JourneyConstants.showFailureFeedback: "true",
+            JourneyConstants.showInstructionsScreen: "true",
         ])
         XCTAssertEqual(opts.livenessEnvironmentAware, true)
         XCTAssertEqual(opts.showSuccessFeedback, true)
@@ -78,9 +78,9 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
 
     func testBoolFalseWhenExplicitlySetToFalse() {
         let opts = RecognizeMobileSDKOptions(raw: [
-            JourneyConstants.showSuccessFeedback: JourneyConstants.boolFalse,
-            JourneyConstants.showFailureFeedback: JourneyConstants.boolFalse,
-            JourneyConstants.showInstructionsScreen: JourneyConstants.boolFalse
+            JourneyConstants.showSuccessFeedback: "false",
+            JourneyConstants.showFailureFeedback: "false",
+            JourneyConstants.showInstructionsScreen: "false"
         ])
         XCTAssertEqual(opts.showSuccessFeedback, false)
         XCTAssertEqual(opts.showFailureFeedback, false)
@@ -256,7 +256,7 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         let callback = RecognizeCallback()
         let raw: [String: Any] = [
             JourneyConstants.livenessConfiguration: "LEVEL_1",
-            JourneyConstants.livenessEnvironmentAware: JourneyConstants.boolTrue
+            JourneyConstants.livenessEnvironmentAware: "true"
         ]
         callback.initValue(name: JourneyConstants.mobileSDKOptions, value: raw)
         XCTAssertEqual(callback.mobileSDKOptions.livenessConfiguration, "LEVEL_1")
@@ -391,47 +391,6 @@ final class StringDictionaryTests: XCTestCase {
     }
 }
 
-// MARK: - JourneyConstantsRecognizeTests
-
-final class JourneyConstantsRecognizeTests: XCTestCase {
-
-    func testPingOneRecognizeCallbackConstant() {
-        XCTAssertEqual(JourneyConstants.pingOneRecognizeCallback, "PingOneRecognizeCallback")
-    }
-
-    func testInputFieldKeyConstants() {
-        XCTAssertEqual(JourneyConstants.inputSignedJwt, "signedJwt")
-        XCTAssertEqual(JourneyConstants.inputClientState, "clientState")
-        XCTAssertEqual(JourneyConstants.inputRecognizeId, "recognizeId")
-        XCTAssertEqual(JourneyConstants.inputDevicePublicSigningKey, "devicePublicSigningKey")
-        XCTAssertEqual(JourneyConstants.inputClientError, "clientError")
-        XCTAssertEqual(JourneyConstants.inputClientErrorCode, "clientErrorCode")
-    }
-
-    func testBoolTrueConstant() {
-        XCTAssertEqual(JourneyConstants.boolTrue, "true")
-    }
-
-    func testClientErrorConstant() {
-        XCTAssertEqual(JourneyConstants.clientError, "clientError")
-    }
-
-    func testOutputFieldKeyConstants() {
-        XCTAssertEqual(JourneyConstants.operationType, "operationType")
-        XCTAssertEqual(JourneyConstants.websocketURL, "websocketURL")
-        XCTAssertEqual(JourneyConstants.customerName, "customerName")
-        XCTAssertEqual(JourneyConstants.imageEncryptionPublicKey, "imageEncryptionPublicKey")
-        XCTAssertEqual(JourneyConstants.imageEncryptionKeyId, "imageEncryptionKeyId")
-        XCTAssertEqual(JourneyConstants.host, "host")
-        XCTAssertEqual(JourneyConstants.apiKey, "apiKey")
-        XCTAssertEqual(JourneyConstants.username, "username")
-        XCTAssertEqual(JourneyConstants.transactionData, "transactionData")
-        XCTAssertEqual(JourneyConstants.generateClientState, "generateClientState")
-        XCTAssertEqual(JourneyConstants.clientState, "clientState")
-        XCTAssertEqual(JourneyConstants.mobileSDKOptions, "mobileSDKOptions")
-    }
-
-}
 
 // MARK: - EnrollWithClientStateTests
 

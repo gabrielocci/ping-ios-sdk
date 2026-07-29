@@ -331,11 +331,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
 extension JourneyConstants {
     /// The string value used as a fallback client error when `localizedDescription` is empty.
-    public static let clientError = "clientError"
-    /// The canonical string representation of boolean `true` as sent by the server.
-    public static let boolTrue = "true"
-    /// The canonical string representation of boolean `false` as sent by the server.
-    public static let boolFalse = "false"
+    static let clientError = "clientError"
     /// Input field suffix for the signed JWT produced by the Keyless SDK.
     public static let inputSignedJwt = "signedJwt"
     /// Input field suffix for the client state produced by the Keyless SDK.
