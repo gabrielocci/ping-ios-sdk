@@ -230,7 +230,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
     ///
     /// Shared by `PingOneRecognizeAuthenticateCallback` and the already-enrolled
     /// path in `PingOneRecognizeEnrollCallback.enrollWithClientState`.
-    func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    open func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -279,7 +279,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
     // MARK: - Keyless SDK Configuration
 
     /// Configures and initialises the Keyless SDK with the server-supplied credentials.
-    public func configure() async throws {
+    open func configure() async throws {
         let setupConfig = SetupConfig(
             apiKey: apiKey,
             hosts: [host],

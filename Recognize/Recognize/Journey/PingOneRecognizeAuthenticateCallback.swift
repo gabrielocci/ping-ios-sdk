@@ -25,7 +25,7 @@ import PingJourneyPlugin
 ///     let result = await callback.execute()
 /// }
 /// ```
-public class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unchecked Sendable {
+open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unchecked Sendable {
 
     /// Configures the Keyless SDK and performs the authentication operation.
     ///
