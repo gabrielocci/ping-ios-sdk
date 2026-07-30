@@ -80,15 +80,7 @@ sequenceDiagram
 
 ## Usage
 
-### 1. Register the Callback
-
-Register `RecognizeCallback` before starting any Journey:
-
-```swift
-await RecognizeCallbacks.registerCallbacks()
-```
-
-### 2. Create a Journey Instance
+### 1. Create a Journey Instance
 
 ```swift
 let journey = await Journey.createJourney { config in
@@ -101,20 +93,33 @@ let journey = await Journey.createJourney { config in
 }
 ```
 
-### 3. Handle the Recognize Callback
+### 2. Handle the Recognize Callback
+
+The Journey framework returns either a `PingOneRecognizeEnrollCallback` or a `PingOneRecognizeAuthenticateCallback` depending on the `operationType` set by the server. Both expose an `execute()` method that drives the biometric ceremony and returns `Result<RecognizeResult, Error>`.
 
 ```swift
 for await node in journey.start() {
     switch node {
     case let continueNode as ContinueNode:
         for callback in continueNode.callbacks {
-            if let recognizeCallback = callback as? RecognizeCallback {
-                let result = await recognizeCallback.execute()
+            if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
+                let result = await enrollCallback.execute()
                 switch result {
                 case .success:
                     await continueNode.next()
                 case .failure(let error):
-                    print("Recognize failed: \(error.localizedDescription)")
+                    print("Enrollment failed: \(error.localizedDescription)")
+                    if let recognizeError = error as? RecognizeError {
+                        print("Error code: \(recognizeError.code)")
+                    }
+                }
+            } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
+                let result = await authCallback.execute()
+                switch result {
+                case .success:
+                    await continueNode.next()
+                case .failure(let error):
+                    print("Authentication failed: \(error.localizedDescription)")
                     if let recognizeError = error as? RecognizeError {
                         print("Error code: \(recognizeError.code)")
                     }
@@ -229,7 +234,6 @@ class RecognizeViewModel: ObservableObject {
     private var journey: Journey?
 
     func setup() async {
-        await RecognizeCallbacks.registerCallbacks()
         journey = await Journey.createJourney { config in
             config.module(Oidc) { oidcConfig in
                 oidcConfig.clientId = "your-client-id"
@@ -251,9 +255,18 @@ class RecognizeViewModel: ObservableObject {
         switch node {
         case let continueNode as ContinueNode:
             for callback in continueNode.callbacks {
-                if let recognizeCallback = callback as? RecognizeCallback {
-                    state = recognizeCallback.operationType == .enroll ? .enrolling : .authenticating
-                    let result = await recognizeCallback.execute()
+                if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
+                    state = .enrolling
+                    let result = await enrollCallback.execute()
+                    switch result {
+                    case .success:
+                        await continueNode.next()
+                    case .failure(let error):
+                        state = .error(error.localizedDescription)
+                    }
+                } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
+                    state = .authenticating
+                    let result = await authCallback.execute()
                     switch result {
                     case .success:
                         await continueNode.next()
