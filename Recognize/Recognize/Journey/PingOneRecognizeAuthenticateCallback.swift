@@ -29,14 +29,14 @@ public class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @u
 
     /// Configures the Keyless SDK and performs the authentication operation.
     ///
-    /// - Returns: `.success(())` on completion, or `.failure(error)` if any step fails.
-    ///   On failure the `IDToken1clientError` input field is automatically populated.
-    public func execute() async -> Result<Void, Error> {
+    /// - Returns: `.success(RecognizeResult)` on completion, or `.failure(error)` if any step fails.
+    ///   On failure the `clientError` input field is automatically populated.
+    public func execute() async -> Result<RecognizeResult, Error> {
         do {
             try await configure()
             try Task.checkCancellation()
-            try await performAuthenticate(options: mobileSDKOptions)
-            return .success(())
+            let result = try await performAuthenticate(options: mobileSDKOptions)
+            return .success(result)
         } catch {
             let message = error.localizedDescription.isEmpty
                 ? JourneyConstants.clientError

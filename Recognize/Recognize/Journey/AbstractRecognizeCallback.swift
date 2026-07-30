@@ -79,6 +79,11 @@ public struct RecognizeMobileSDKOptions: Sendable {
     /// The UI presentation style for authentication (e.g. `"CAMERA_PREVIEW"`).
     public var presentationStyle: String { raw[JourneyConstants.presentationStyle] ?? "" }
 
+    // MARK: Common options (continued)
+
+    /// Whether the SDK should capture and return the selfie frame after the operation completes.
+    public var retrieveSelfie: Bool? { raw[JourneyConstants.retrieveSelfie].flatMap(Bool.init) }
+
 }
 
 // MARK: - AbstractRecognizeCallback
@@ -123,6 +128,9 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
     /// Customer-supplied transaction data to be signed by the SDK.
     private(set) public var transactionData: String = ""
 
+    /// The intended audience for the signed JWT.
+    private(set) public var audience: String = ""
+
     /// Whether the server requested generation of a new client state.
     private(set) public var generateClientState: Bool = false
 
@@ -157,6 +165,8 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             if let stringValue = value as? String { self.username = stringValue }
         case JourneyConstants.transactionData:
             if let stringValue = value as? String { self.transactionData = stringValue }
+        case JourneyConstants.audience:
+            if let stringValue = value as? String { self.audience = stringValue }
         case JourneyConstants.generateClientState:
             if let boolValue = value as? Bool {
                 self.generateClientState = boolValue
@@ -220,7 +230,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
     ///
     /// Shared by `PingOneRecognizeAuthenticateCallback` and the already-enrolled
     /// path in `PingOneRecognizeEnrollCallback.enrollWithClientState`.
-    func performAuthenticate(options: RecognizeMobileSDKOptions) async throws {
+    func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -233,13 +243,14 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveAuthenticationFrame: options.retrieveSelfie ?? BiomAuthConfig.DEFAULT_SHOULD_RETRIEVE_AUTHENTICATION_FRAME,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
             Keyless.authenticate(configuration: authConfig) { [weak self] result in
                 switch result {
                 case .success(let response):
@@ -248,7 +259,12 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: RecognizeResult(
+                        signedJwt: response.signedJwt,
+                        clientState: response.clientState,
+                        recognizeId: nil,
+                        selfie: response.authenticationFrame
+                    ))
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
@@ -284,7 +300,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
     /// Returns a `JwtSigningInfo` when `transactionData` is non-empty; `nil` otherwise.
     public func jwtSigningInfo(from transactionData: String) -> JwtSigningInfo? {
-        transactionData.isEmpty ? nil : JwtSigningInfo(claimTransactionData: transactionData)
+        transactionData.isEmpty ? nil : JwtSigningInfo(claimTransactionData: transactionData, audience: audience)
     }
 
     /// Maps the server liveness string (e.g. `"LEVEL_1"`) to `Keyless.LivenessConfiguration`.
@@ -360,6 +376,7 @@ extension JourneyConstants {
     static let apiKey = "apiKey"
     static let username = "username"
     static let transactionData = "transactionData"
+    static let audience = "audience"
     static let generateClientState = "generateClientState"
     static let clientState = "clientState"
     static let mobileSDKOptions = "mobileSDKOptions"
@@ -380,5 +397,6 @@ extension JourneyConstants {
     static let presentation = "presentation"
     static let numberOfEnrollmentCircuits = "numberOfEnrollmentCircuits"
     static let presentationStyle = "presentationStyle"
+    static let retrieveSelfie = "retrieveSelfie"
 }
 #endif

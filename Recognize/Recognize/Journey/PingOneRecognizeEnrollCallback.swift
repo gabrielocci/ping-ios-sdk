@@ -30,18 +30,19 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
 
     /// Configures the Keyless SDK and performs the enrollment operation.
     ///
-    /// - Returns: `.success(())` on completion, or `.failure(error)` if any step fails.
-    ///   On failure the `IDToken1clientError` input field is automatically populated.
-    public func execute() async -> Result<Void, Error> {
+    /// - Returns: `.success(RecognizeResult)` on completion, or `.failure(error)` if any step fails.
+    ///   On failure the `clientError` input field is automatically populated.
+    public func execute() async -> Result<RecognizeResult, Error> {
         do {
             try await configure()
             try Task.checkCancellation()
+            let result: RecognizeResult
             if !clientState.isEmpty {
-                try await enrollWithClientState(clientState, options: mobileSDKOptions)
+                result = try await enrollWithClientState(clientState, options: mobileSDKOptions)
             } else {
-                try await enroll(options: mobileSDKOptions)
+                result = try await enroll(options: mobileSDKOptions)
             }
-            return .success(())
+            return .success(result)
         } catch {
             let message = error.localizedDescription.isEmpty
                 ? JourneyConstants.clientError
@@ -58,8 +59,8 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
 
     /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
     ///
-    /// On success, populates `IDToken1recognizeId`, `IDToken1signedJwt`, and `IDToken1clientState`.
-    internal func enroll(options: RecognizeMobileSDKOptions) async throws {
+    /// On success, populates the `recognizeId`, `signedJwt`, and `clientState` input fields.
+    internal func enroll(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -75,13 +76,14 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveEnrollmentFrame: options.retrieveSelfie ?? BiomEnrollConfig.DEFAULT_SHOULD_RETRIEVE_ENROLLMENT_FRAME,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -91,7 +93,12 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: RecognizeResult(
+                        signedJwt: enrollmentResult.signedJwt,
+                        clientState: enrollmentResult.clientState,
+                        recognizeId: enrollmentResult.keylessId,
+                        selfie: enrollmentResult.enrollmentFrame
+                    ))
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
@@ -105,11 +112,10 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
 
     /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled.
     ///
-    /// Called from the factory when `operationType` is `AUTHENTICATE` but a `clientState` is present.
-    /// - If `validateUserDeviceActive` returns nil the user is already enrolled — delegates to `PingOneRecognizeAuthenticateCallback`.
+    /// - If `validateUserDeviceActive` returns nil the user is already enrolled — delegates to `performAuthenticate`.
     /// - If `validateUserDeviceActive` returns `userNotEnrolled` — runs enrollment with the server-supplied client state.
-    /// - Any other error from either call is propagated as a `RecognizeError`.
-    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws {
+    /// - Any other error is propagated as a `RecognizeError`.
+    internal func enrollWithClientState(_ clientState: String, options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
         let validationError: KeylessSDKError? = await withCheckedContinuation { continuation in
             Keyless.validateUserDeviceActive { error in
                 continuation.resume(returning: error)
@@ -122,8 +128,7 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
             }
         } else {
             // User is already enrolled — run normal authentication.
-            try await performAuthenticate(options: options)
-            return
+            return try await performAuthenticate(options: options)
         }
 
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
@@ -141,13 +146,14 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveEnrollmentFrame: options.retrieveSelfie ?? BiomEnrollConfig.DEFAULT_SHOULD_RETRIEVE_ENROLLMENT_FRAME,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -157,7 +163,12 @@ public class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @uncheck
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume()
+                    continuation.resume(returning: RecognizeResult(
+                        signedJwt: enrollmentResult.signedJwt,
+                        clientState: enrollmentResult.clientState,
+                        recognizeId: enrollmentResult.keylessId,
+                        selfie: enrollmentResult.enrollmentFrame
+                    ))
                 case .failure(let error):
                     continuation.resume(throwing: RecognizeError(error.message, code: error.code))
                 }
