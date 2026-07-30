@@ -336,7 +336,14 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         if let dict = value as? [String: String] { return dict }
         if let dict = value as? [String: Any] {
             return dict.reduce(into: [:]) { result, pair in
-                result[pair.key] = "\(pair.value)"
+                // Check Bool before falling through to interpolation: __NSCFBoolean (from
+                // JSONSerialization) is a subclass of NSNumber and interpolates as "1"/"0",
+                // which Bool.init(String) doesn't recognise. Cast to Bool first.
+                if let boolValue = pair.value as? Bool {
+                    result[pair.key] = boolValue ? "true" : "false"
+                } else {
+                    result[pair.key] = "\(pair.value)"
+                }
             }
         }
         return [:]

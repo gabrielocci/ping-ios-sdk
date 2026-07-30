@@ -389,6 +389,32 @@ final class StringDictionaryTests: XCTestCase {
         XCTAssertNil(callback.mobileSDKOptions.numberOfEnrollmentCircuits)
         XCTAssertNil(callback.mobileSDKOptions.livenessEnvironmentAware)
     }
+
+    func testNSCFBooleanFalseCoercedCorrectly() throws {
+        // JSONSerialization produces __NSCFBoolean, which interpolates as "0"/"1".
+        // Verify that false JSON booleans are coerced to "false", not "0".
+        let json = """
+        {"showInstructionsScreen": false, "showSuccessFeedback": false, "livenessEnvironmentAware": false}
+        """.data(using: .utf8)!
+        let parsed = try JSONSerialization.jsonObject(with: json) as! [String: Any]
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: parsed)
+        XCTAssertEqual(callback.mobileSDKOptions.showInstructionsScreen, false)
+        XCTAssertEqual(callback.mobileSDKOptions.showSuccessFeedback, false)
+        XCTAssertEqual(callback.mobileSDKOptions.livenessEnvironmentAware, false)
+    }
+
+    func testNSCFBooleanTrueCoercedCorrectly() throws {
+        let json = """
+        {"showInstructionsScreen": true, "showSuccessFeedback": true, "livenessEnvironmentAware": true}
+        """.data(using: .utf8)!
+        let parsed = try JSONSerialization.jsonObject(with: json) as! [String: Any]
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: parsed)
+        XCTAssertEqual(callback.mobileSDKOptions.showInstructionsScreen, true)
+        XCTAssertEqual(callback.mobileSDKOptions.showSuccessFeedback, true)
+        XCTAssertEqual(callback.mobileSDKOptions.livenessEnvironmentAware, true)
+    }
 }
 
 
