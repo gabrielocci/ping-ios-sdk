@@ -304,28 +304,28 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
     }
 
     /// Maps the server liveness string (e.g. `"LEVEL_1"`) to `Keyless.LivenessConfiguration`.
+    ///
+    /// Uses `rawValue` init so new SDK levels work without a code change.
+    /// Falls back to `BiomEnrollConfig.DEFAULT_LIVENESS_CONFIG` for unrecognised values.
     public static func livenessConfiguration(from string: String) -> Keyless.LivenessConfiguration {
-        switch string.uppercased() {
-        case "DEVELOPMENT": return .DEVELOPMENT
-        case "LEVEL_1":     return .LEVEL_1
-        case "LEVEL_2":     return .LEVEL_2
-        default:            return .LEVEL_1
-        }
+        Keyless.LivenessConfiguration(rawValue: string.uppercased()) ?? BiomEnrollConfig.DEFAULT_LIVENESS_CONFIG
     }
 
-    /// Maps the server `presentation` string (e.g. `"OVERLAY"`) to `BiomEnrollConfig.PresentationStyle`.
+    /// Maps the server `presentation` string to `BiomEnrollConfig.PresentationStyle`; not `RawRepresentable`, so an explicit switch is required.
     public static func enrollPresentationStyle(from string: String) -> BiomEnrollConfig.PresentationStyle {
         switch string.uppercased() {
         case "FULL_SCREEN": return .fullScreen
-        default:            return .overlay
+        case "OVERLAY":     return .overlay
+        default:            return BiomEnrollConfig.DEFAULT_PRESENTATION_STYLE
         }
     }
 
-    /// Maps the server `presentationStyle` string (e.g. `"CAMERA_PREVIEW"`) to `PresentationStyle`.
+    /// Maps the server `presentationStyle` string to `PresentationStyle`; raw values are camelCase so an explicit switch is required.
     public static func authPresentationStyle(from string: String) -> PresentationStyle {
         switch string.uppercased() {
+        case "CAMERA_PREVIEW":    return .cameraPreview
         case "NO_CAMERA_PREVIEW": return .noCameraPreview
-        default:                  return .cameraPreview
+        default:                  return BiomAuthConfig.DEFAULT_PRESENTATION_STYLE
         }
     }
 
