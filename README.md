@@ -52,7 +52,8 @@ It offers a range of APIs for user authentication, user device management, and a
     ├── Security & Protection                 # Advanced security features
     │   ├── PingProtect                       # Provides advanced security integration with PingOne Protect.
     │   ├── PingReCaptchaEnterprise           # reCAPTCHA Enterprise integration.
-    │   └── PingFido                          # Provides FIDO2 / WebAuthn authentication support.
+    │   ├── PingFido                          # Provides FIDO2 / WebAuthn authentication support.
+    │   └── PingRecognize                     # PingOne Recognize biometric authentication (enrollment and authentication).
     ├── MFA                                   # Multi-Factor Authentication
     │   ├── PingOath                          # Provides OATH-based one-time password functionality.
     │   └── PingPush                          # Push notification authentication.

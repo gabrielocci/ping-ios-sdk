@@ -69,7 +69,7 @@ sequenceDiagram
     App ->> Journey: start("recognize-journey")
     Journey ->> AIC: /authenticate
     AIC ->> Journey: PingOneRecognizeCallback (operationType=ENROLL or AUTHENTICATE)
-    Journey ->> App: Node with RecognizeCallback
+    Journey ->> App: Node with PingOneRecognizeEnrollCallback or PingOneRecognizeAuthenticateCallback
     App ->> Keyless: execute() → enroll() / authenticate()
     Keyless ->> App: EnrollmentResult / AuthenticationResult
     App ->> Journey: next()
@@ -98,47 +98,46 @@ let journey = await Journey.createJourney { config in
 The Journey framework returns either a `PingOneRecognizeEnrollCallback` or a `PingOneRecognizeAuthenticateCallback` depending on the `operationType` set by the server. Both expose an `execute()` method that drives the biometric ceremony and returns `Result<RecognizeResult, Error>`.
 
 ```swift
-for await node in journey.start() {
-    switch node {
-    case let continueNode as ContinueNode:
-        for callback in continueNode.callbacks {
-            if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
-                let result = await enrollCallback.execute()
-                switch result {
-                case .success:
-                    await continueNode.next()
-                case .failure(let error):
-                    print("Enrollment failed: \(error.localizedDescription)")
-                    if let recognizeError = error as? RecognizeError {
-                        print("Error code: \(recognizeError.code)")
-                    }
+let node = await journey.start("recognize-journey")
+switch node {
+case let continueNode as ContinueNode:
+    for callback in continueNode.callbacks {
+        if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
+            let result = await enrollCallback.execute()
+            switch result {
+            case .success:
+                await continueNode.next()
+            case .failure(let error):
+                print("Enrollment failed: \(error.localizedDescription)")
+                if let recognizeError = error as? RecognizeError {
+                    print("Error code: \(recognizeError.code)")
                 }
-            } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
-                let result = await authCallback.execute()
-                switch result {
-                case .success:
-                    await continueNode.next()
-                case .failure(let error):
-                    print("Authentication failed: \(error.localizedDescription)")
-                    if let recognizeError = error as? RecognizeError {
-                        print("Error code: \(recognizeError.code)")
-                    }
+            }
+        } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
+            let result = await authCallback.execute()
+            switch result {
+            case .success:
+                await continueNode.next()
+            case .failure(let error):
+                print("Authentication failed: \(error.localizedDescription)")
+                if let recognizeError = error as? RecognizeError {
+                    print("Error code: \(recognizeError.code)")
                 }
             }
         }
-    case is SuccessNode:
-        print("User authenticated")
-    case is FailureNode:
-        print("Authentication failed")
-    default:
-        break
     }
+case is SuccessNode:
+    print("User authenticated")
+case is FailureNode:
+    print("Authentication failed")
+default:
+    break
 }
 ```
 
 ## Enrollment
 
-`RecognizeCallback.execute()` detects `operationType == .enroll` and performs the biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
+`PingOneRecognizeEnrollCallback.execute()` performs the biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
 
 The callback automatically maps server-supplied fields to `BiomEnrollConfig`:
 
@@ -157,7 +156,7 @@ The callback automatically maps server-supplied fields to `BiomEnrollConfig`:
 | `mobileSDKOptions.showFailureFeedback`         | `showFailureFeedback`          |
 | `mobileSDKOptions.showInstructionsScreen`      | `showInstructionsScreen`       |
 | `mobileSDKOptions.presentation`                | `presentationStyle`            |
-| `mobileSDKOptions.numberOfEnrollmentCircuits`  | `numberOfEnrollmentCircuits`   |
+| `mobileSDKOptions.numberOfEnrollmentCircuits`  | `SetupConfig.numberOfEnrollmentCircuits` (passed in `configure()`) |
 
 On success, the following input fields are automatically populated and submitted to the server:
 
@@ -172,7 +171,7 @@ On success, the following input fields are automatically populated and submitted
 
 ## Authentication
 
-`RecognizeCallback.execute()` detects `operationType == .authenticate` and performs the biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
+`PingOneRecognizeAuthenticateCallback.execute()` performs the biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
 
 The callback automatically maps server-supplied fields to `BiomAuthConfig`:
 
@@ -246,9 +245,8 @@ class RecognizeViewModel: ObservableObject {
 
     func start() async {
         guard let journey else { return }
-        for await node in journey.start() {
-            await handleNode(node)
-        }
+        let node = await journey.start("recognize-journey")
+        await handleNode(node)
     }
 
     private func handleNode(_ node: Node) async {
