@@ -15,8 +15,11 @@ import PingJourneyPlugin
 
 /// A Journey callback that drives PingOne Recognize biometric **authentication**.
 ///
-/// Returned by `RecognizeCallback` when the server sets `operationType` to `AUTHENTICATE`
-/// and no `clientState` is present.
+/// Returned by `RecognizeCallback` when the server sets `operationType` to `AUTHENTICATE`.
+///
+/// When the server also supplies a `clientState`, `execute()` first checks whether the
+/// device is already enrolled: if not, it runs enrollment with that `clientState` instead
+/// of authenticating (the enrollment-restore path) — matching Android's `authenticate()`.
 ///
 /// **Usage:**
 /// ```swift
@@ -27,7 +30,8 @@ import PingJourneyPlugin
 /// ```
 open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unchecked Sendable {
 
-    /// Configures the Keyless SDK and performs the authentication operation.
+    /// Configures the Keyless SDK and performs the authentication (or enrollment-restore)
+    /// operation.
     ///
     /// - Returns: `.success(RecognizeResult)` on completion, or `.failure(error)` if any step fails.
     ///   On failure the `clientError` input field is automatically populated.
@@ -35,7 +39,12 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
         do {
             try await configure()
             try Task.checkCancellation()
-            let result = try await performAuthenticate(options: mobileSDKOptions)
+            let result: RecognizeResult
+            if !clientState.isEmpty {
+                result = try await enrollWithClientStateIfNeeded(clientState, options: mobileSDKOptions)
+            } else {
+                result = try await performAuthenticate(options: mobileSDKOptions)
+            }
             return .success(result)
         } catch {
             let message = error.localizedDescription.isEmpty
@@ -47,6 +56,62 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
             }
             return .failure(error)
         }
+    }
+
+    // MARK: - Enrollment-restore path
+
+    /// The outcome of `validateUserDeviceActive()`.
+    ///
+    /// Returns a tri-state enum so tests can inject any outcome without constructing
+    /// the internal-init `KeylessSDKError` type:
+    /// - `.active` — device is enrolled, proceed with authentication.
+    /// - `.notEnrolled` — device is not enrolled, proceed with enrollment.
+    /// - `.otherError(message:code:)` — unexpected error, propagate to caller.
+    public enum ValidationResult {
+        case active
+        case notEnrolled
+        case otherError(message: String, code: Int)
+    }
+
+    /// Validates whether the current device is active (enrolled) in the Keyless SDK.
+    ///
+    /// Extracted as `open` so test subclasses can override it.
+    open func validateUserDeviceActive() async -> ValidationResult {
+        await withCheckedContinuation { continuation in
+            Keyless.validateUserDeviceActive { error in
+                guard let error else {
+                    continuation.resume(returning: .active)
+                    return
+                }
+                if case .integrationError(let ie) = error.kind, ie == .userNotEnrolled {
+                    continuation.resume(returning: .notEnrolled)
+                } else {
+                    continuation.resume(returning: .otherError(message: error.message, code: error.code))
+                }
+            }
+        }
+    }
+
+    /// Handles the authenticate-with-clientState path: checks whether the user is already enrolled.
+    ///
+    /// - If `validateUserDeviceActive` returns `.active`, the user is already enrolled — delegates
+    ///   to `performAuthenticate`.
+    /// - If it returns `.notEnrolled`, runs enrollment with the server-supplied client state.
+    /// - Any other error is propagated as a `RecognizeError`.
+    open func enrollWithClientStateIfNeeded(
+        _ clientState: String,
+        options: RecognizeMobileSDKOptions
+    ) async throws -> RecognizeResult {
+        switch await validateUserDeviceActive() {
+        case .active:
+            return try await performAuthenticate(options: options)
+        case .otherError(let message, let code):
+            throw RecognizeError(message, code: code)
+        case .notEnrolled:
+            break
+        }
+
+        return try await performEnroll(clientStateOverride: clientState, options: options)
     }
 }
 #endif

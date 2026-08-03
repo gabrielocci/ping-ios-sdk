@@ -16,10 +16,10 @@ import PingJourneyPlugin
 ///
 /// The server emits a single callback type for both enrollment and authentication.
 /// `RecognizeCallback` reads the `operationType` output field during `initialize(with:)`
-/// and returns the appropriate concrete instance:
+/// and returns the appropriate concrete instance, matching the server's stated intent:
 /// - `ENROLL` → `PingOneRecognizeEnrollCallback`
-/// - `AUTHENTICATE` (with clientState) → `PingOneRecognizeEnrollCallback` (enrollment-restore path)
-/// - `AUTHENTICATE` (without clientState) → `PingOneRecognizeAuthenticateCallback`
+/// - `AUTHENTICATE` → `PingOneRecognizeAuthenticateCallback` (handles the enrollment-restore
+///   path internally when the server also supplies a `clientState`)
 ///
 /// This class is not intended to be used directly — cast the result of
 /// `node.callbacks` to `PingOneRecognizeEnrollCallback` or `PingOneRecognizeAuthenticateCallback`.
@@ -29,22 +29,15 @@ class RecognizeCallback: AbstractRecognizeCallback, @unchecked Sendable {
         // Parse shared output fields into self first.
         _ = await super.initialize(with: json)
 
+        let callback: AbstractRecognizeCallback
         switch operationType {
         case .enroll:
-            let callback = PingOneRecognizeEnrollCallback()
-            _ = await callback.initialize(with: json)
-            return callback
+            callback = PingOneRecognizeEnrollCallback()
         case .authenticate:
-            if !clientState.isEmpty {
-                let callback = PingOneRecognizeEnrollCallback()
-                _ = await callback.initialize(with: json)
-                return callback
-            } else {
-                let callback = PingOneRecognizeAuthenticateCallback()
-                _ = await callback.initialize(with: json)
-                return callback
-            }
+            callback = PingOneRecognizeAuthenticateCallback()
         }
+        _ = await callback.initialize(with: json)
+        return callback
     }
 }
 #endif

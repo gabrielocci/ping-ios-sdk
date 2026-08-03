@@ -92,8 +92,9 @@ public struct RecognizeMobileSDKOptions: Sendable {
 ///
 /// Provides shared output properties, input helpers, SDK configuration, and
 /// field-parsing logic. Concrete subclasses implement the biometric operation:
-/// - `PingOneRecognizeEnrollCallback` — enrollment and enrollment-with-client-state
-/// - `PingOneRecognizeAuthenticateCallback` — standard authentication
+/// - `PingOneRecognizeEnrollCallback` — enrollment
+/// - `PingOneRecognizeAuthenticateCallback` — authentication, and enrollment-restore
+///   when the server supplies a `clientState` for an unenrolled device
 open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unchecked Sendable {
 
     /// Reference to the continue node for accessing other callbacks.
@@ -226,10 +227,71 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
     // MARK: - Shared Biometric Operations
 
+    /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
+    ///
+    /// Shared by `PingOneRecognizeEnrollCallback` (plain enrollment, no override) and the
+    /// not-yet-enrolled path in `PingOneRecognizeAuthenticateCallback.execute` (enrollment
+    /// restore, `clientStateOverride` set to the server-supplied `clientState`).
+    ///
+    /// On success, populates the `recognizeId`, `signedJwt`, and `clientState` input fields.
+    open func performEnroll(
+        clientStateOverride: String? = nil,
+        options: RecognizeMobileSDKOptions
+    ) async throws -> RecognizeResult {
+        let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
+            : Keyless.OperationInfo(
+                id: options.operationInfoId,
+                payload: options.operationInfoPayload,
+                externalUserId: options.operationInfoExternalUserId.isEmpty ? nil : options.operationInfoExternalUserId
+            )
+
+        let effectiveClientState = clientStateOverride ?? clientState
+        let enrollConfig = BiomEnrollConfig(
+            clientState: effectiveClientState.isEmpty ? nil : effectiveClientState,
+            operationInfo: operationInfo,
+            jwtSigningInfo: jwtSigningInfo(from: transactionData),
+            livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
+            livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
+            cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
+            generatingClientState: generateClientState ? .backup : nil,
+            shouldRetrieveEnrollmentFrame: options.retrieveSelfie ?? BiomEnrollConfig.DEFAULT_SHOULD_RETRIEVE_ENROLLMENT_FRAME,
+            showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
+            showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
+            showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
+            presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
+        )
+
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
+            Keyless.enroll(configuration: enrollConfig) { [weak self] result in
+                switch result {
+                case .success(let enrollmentResult):
+                    if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
+                    if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
+                    if let state = enrollmentResult.clientState { self?.setClientState(state) }
+                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+                        self?.setDevicePublicSigningKey(key)
+                    }
+                    continuation.resume(returning: RecognizeResult(
+                        signedJwt: enrollmentResult.signedJwt,
+                        clientState: enrollmentResult.clientState,
+                        recognizeId: enrollmentResult.keylessId,
+                        selfie: enrollmentResult.enrollmentFrame
+                    ))
+                case .failure(let error):
+                    if let sdkError = error as? KeylessSDKError {
+                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
+                    } else {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+        }
+    }
+
     /// Performs the biometric authentication operation using `BiomAuthConfig`.
     ///
     /// Shared by `PingOneRecognizeAuthenticateCallback` and the already-enrolled
-    /// path in `PingOneRecognizeEnrollCallback.enrollWithClientState`.
+    /// path in `PingOneRecognizeAuthenticateCallback.execute`.
     open func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
