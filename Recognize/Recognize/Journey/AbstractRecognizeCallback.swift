@@ -79,11 +79,6 @@ public struct RecognizeMobileSDKOptions: Sendable {
     /// The UI presentation style for authentication (e.g. `"CAMERA_PREVIEW"`).
     public var presentationStyle: String { raw[JourneyConstants.presentationStyle] ?? "" }
 
-    // MARK: Common options (continued)
-
-    /// Whether the SDK should capture and return the selfie frame after the operation completes.
-    public var retrieveSelfie: Bool? { raw[JourneyConstants.retrieveSelfie].flatMap(Bool.init) }
-
 }
 
 // MARK: - AbstractRecognizeCallback
@@ -229,15 +224,19 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
     /// Performs the biometric enrollment operation using `BiomEnrollConfig`.
     ///
-    /// Shared by `PingOneRecognizeEnrollCallback` (plain enrollment, no override) and the
-    /// not-yet-enrolled path in `PingOneRecognizeAuthenticateCallback.execute` (enrollment
-    /// restore, `clientStateOverride` set to the server-supplied `clientState`).
+    /// Shared by `PingOneRecognizeEnrollCallback.enroll()` (plain enrollment, no override) and
+    /// the not-yet-enrolled path in `PingOneRecognizeAuthenticateCallback.authenticate()`
+    /// (enrollment restore, `clientStateOverride` set to the server-supplied `clientState`).
     ///
     /// On success, populates the `recognizeId`, `signedJwt`, and `clientState` input fields.
+    /// The captured selfie (if `retrieveSelfie` is `true`) is returned only in the
+    /// `RecognizeSuccess` to the caller — it is never written to an input field, so it never
+    /// reaches Journey or the callback payload.
     open func performEnroll(
         clientStateOverride: String? = nil,
+        retrieveSelfie: Bool = false,
         options: RecognizeMobileSDKOptions
-    ) async throws -> RecognizeResult {
+    ) async throws -> RecognizeSuccess {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -254,14 +253,14 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
-            shouldRetrieveEnrollmentFrame: options.retrieveSelfie ?? BiomEnrollConfig.DEFAULT_SHOULD_RETRIEVE_ENROLLMENT_FRAME,
+            shouldRetrieveEnrollmentFrame: retrieveSelfie,
             showInstructionsScreen: options.showInstructionsScreen ?? BiomEnrollConfig.DEFAULT_SHOW_INSTRUCTIONS_SCREEN,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             showFailureFeedback: options.showFailureFeedback ?? BiomEnrollConfig.DEFAULT_SHOW_FAILURE_FEEDBACK,
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeSuccess, Error>) in
             Keyless.enroll(configuration: enrollConfig) { [weak self] result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -271,7 +270,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume(returning: RecognizeResult(
+                    continuation.resume(returning: RecognizeSuccess(
                         signedJwt: enrollmentResult.signedJwt,
                         clientState: enrollmentResult.clientState,
                         recognizeId: enrollmentResult.keylessId,
@@ -279,7 +278,9 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                     ))
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
+                        continuation.resume(throwing: RecognizeError(
+                            sdkError.message, code: sdkError.code, debuggingInfo: sdkError.debuggingInfo
+                        ))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -290,9 +291,14 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
 
     /// Performs the biometric authentication operation using `BiomAuthConfig`.
     ///
-    /// Shared by `PingOneRecognizeAuthenticateCallback` and the already-enrolled
-    /// path in `PingOneRecognizeAuthenticateCallback.execute`.
-    open func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    /// Shared by `PingOneRecognizeAuthenticateCallback.authenticate()` and the
+    /// already-enrolled path within that same method. The captured selfie (if
+    /// `retrieveSelfie` is `true`) is returned only in the `RecognizeSuccess` to the caller —
+    /// it is never written to an input field, so it never reaches Journey or the callback payload.
+    open func performAuthenticate(
+        retrieveSelfie: Bool = false,
+        options: RecognizeMobileSDKOptions
+    ) async throws -> RecognizeSuccess {
         let operationInfo: Keyless.OperationInfo? = options.operationInfoId.isEmpty ? nil
             : Keyless.OperationInfo(
                 id: options.operationInfoId,
@@ -305,14 +311,14 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: generateClientState ? .backup : nil,
-            shouldRetrieveAuthenticationFrame: options.retrieveSelfie ?? BiomAuthConfig.DEFAULT_SHOULD_RETRIEVE_AUTHENTICATION_FRAME,
+            shouldRetrieveAuthenticationFrame: retrieveSelfie,
             showSuccessFeedback: options.showSuccessFeedback ?? BiomAuthConfig.DEFAULT_SHOW_SUCCESS_FEEDBACK,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
             operationInfo: operationInfo,
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeResult, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeSuccess, Error>) in
             Keyless.authenticate(configuration: authConfig) { [weak self] result in
                 switch result {
                 case .success(let response):
@@ -321,7 +327,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                     if case .success(let key) = Keyless.getDevicePublicSigningKey() {
                         self?.setDevicePublicSigningKey(key)
                     }
-                    continuation.resume(returning: RecognizeResult(
+                    continuation.resume(returning: RecognizeSuccess(
                         signedJwt: response.signedJwt,
                         clientState: response.clientState,
                         recognizeId: nil,
@@ -329,7 +335,9 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                     ))
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
-                        continuation.resume(throwing: RecognizeError(sdkError.message, code: sdkError.code))
+                        continuation.resume(throwing: RecognizeError(
+                            sdkError.message, code: sdkError.code, debuggingInfo: sdkError.debuggingInfo
+                        ))
                     } else {
                         continuation.resume(throwing: error)
                     }
@@ -350,7 +358,9 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Keyless.configure(setupConfiguration: setupConfig) { error in
                 if let error = error {
-                    continuation.resume(throwing: RecognizeError(error.message, code: error.code))
+                    continuation.resume(throwing: RecognizeError(
+                        error.message, code: error.code, debuggingInfo: error.debuggingInfo
+                    ))
                 } else {
                     continuation.resume()
                 }
@@ -466,6 +476,5 @@ extension JourneyConstants {
     static let presentation = "presentation"
     static let numberOfEnrollmentCircuits = "numberOfEnrollmentCircuits"
     static let presentationStyle = "presentationStyle"
-    static let retrieveSelfie = "retrieveSelfie"
 }
 #endif

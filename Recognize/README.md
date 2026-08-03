@@ -57,7 +57,7 @@ The `operationType` output field from the server determines which operation is p
 | `ENROLL`        | Biometric enrollment ceremony     |
 | `AUTHENTICATE`  | Biometric authentication ceremony |
 
-All server-supplied configuration (API key, host, liveness settings, etc.) is parsed automatically — **you only need to call `execute()`**.
+All server-supplied configuration (API key, host, liveness settings, etc.) is parsed automatically — **you only need to call `enroll()` or `authenticate()`**.
 
 ```mermaid
 sequenceDiagram
@@ -70,7 +70,7 @@ sequenceDiagram
     Journey ->> AIC: /authenticate
     AIC ->> Journey: PingOneRecognizeCallback (operationType=ENROLL or AUTHENTICATE)
     Journey ->> App: Node with PingOneRecognizeEnrollCallback or PingOneRecognizeAuthenticateCallback
-    App ->> Keyless: execute() → enroll() / authenticate()
+    App ->> Keyless: enroll() / authenticate()
     Keyless ->> App: EnrollmentResult / AuthenticationResult
     App ->> Journey: next()
     Journey ->> AIC: /authenticate (signed JWT submitted)
@@ -95,7 +95,7 @@ let journey = await Journey.createJourney { config in
 
 ### 2. Handle the Recognize Callback
 
-The Journey framework returns either a `PingOneRecognizeEnrollCallback` or a `PingOneRecognizeAuthenticateCallback` depending on the `operationType` set by the server. Both expose an `execute()` method that drives the biometric ceremony and returns `Result<RecognizeResult, Error>`.
+The Journey framework returns either a `PingOneRecognizeEnrollCallback` or a `PingOneRecognizeAuthenticateCallback` depending on the `operationType` set by the server. Each exposes an operation-specific method — `enroll()` or `authenticate()` — that drives the biometric ceremony and returns `Result<RecognizeSuccess, Error>`.
 
 ```swift
 let node = await journey.start("recognize-journey")
@@ -103,7 +103,7 @@ switch node {
 case let continueNode as ContinueNode:
     for callback in continueNode.callbacks {
         if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
-            let result = await enrollCallback.execute()
+            let result = await enrollCallback.enroll()
             switch result {
             case .success:
                 await continueNode.next()
@@ -114,7 +114,7 @@ case let continueNode as ContinueNode:
                 }
             }
         } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
-            let result = await authCallback.execute()
+            let result = await authCallback.authenticate()
             switch result {
             case .success:
                 await continueNode.next()
@@ -137,7 +137,7 @@ default:
 
 ## Enrollment
 
-`PingOneRecognizeEnrollCallback.execute()` performs the biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
+`PingOneRecognizeEnrollCallback.enroll()` performs the biometric enrollment ceremony via `Keyless.enroll(configuration:)`.
 
 The callback automatically maps server-supplied fields to `BiomEnrollConfig`:
 
@@ -171,7 +171,7 @@ On success, the following input fields are automatically populated and submitted
 
 ## Authentication
 
-`PingOneRecognizeAuthenticateCallback.execute()` performs the biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
+`PingOneRecognizeAuthenticateCallback.authenticate()` performs the biometric authentication ceremony via `Keyless.authenticate(configuration:)`.
 
 The callback automatically maps server-supplied fields to `BiomAuthConfig`:
 
@@ -198,7 +198,7 @@ On success, the following input fields are automatically populated and submitted
 
 ### clientState enrollment restore
 
-When the server supplies a `clientState` output field alongside `operationType == .authenticate`, `execute()` automatically handles the enrollment-restore path:
+When the server supplies a `clientState` output field alongside `operationType == .authenticate`, `authenticate()` automatically handles the enrollment-restore path:
 
 1. Calls `Keyless.validateUserDeviceActive()` to check enrollment status.
 2. If the user is **already enrolled** — runs normal authentication.
@@ -210,14 +210,15 @@ No additional code is required from the integrator.
 
 ## Error Handling
 
-On failure, `execute()` returns `.failure(RecognizeError)` and automatically populates `IDToken1clientError` and `IDToken1clientErrorCode` before the Journey submits the response.
+On failure, `enroll()` / `authenticate()` return `.failure(RecognizeError)` and automatically populate `IDToken1clientError` and `IDToken1clientErrorCode` before the Journey submits the response.
 
-`RecognizeError` exposes both `message` and `code` from the underlying Keyless SDK error:
+`RecognizeError` exposes `message`, `code`, and `debuggingInfo` from the underlying Keyless SDK error — `debuggingInfo` carries diagnostic keys such as `flowId`, `sessionId`, `underlyingError`, and `stacktrace` when available:
 
 ```swift
 case .failure(let error):
     if let recognizeError = error as? RecognizeError {
         print("Error \(recognizeError.code): \(recognizeError.message)")
+        print("Debugging info: \(recognizeError.debuggingInfo)")
     }
 ```
 
@@ -255,7 +256,7 @@ class RecognizeViewModel: ObservableObject {
             for callback in continueNode.callbacks {
                 if let enrollCallback = callback as? PingOneRecognizeEnrollCallback {
                     state = .enrolling
-                    let result = await enrollCallback.execute()
+                    let result = await enrollCallback.enroll()
                     switch result {
                     case .success:
                         await continueNode.next()
@@ -264,7 +265,7 @@ class RecognizeViewModel: ObservableObject {
                     }
                 } else if let authCallback = callback as? PingOneRecognizeAuthenticateCallback {
                     state = .authenticating
-                    let result = await authCallback.execute()
+                    let result = await authCallback.authenticate()
                     switch result {
                     case .success:
                         await continueNode.next()
@@ -296,9 +297,9 @@ enum RecognizeState {
 | Symptom | Possible Cause | Fix |
 |---------|----------------|-----|
 | `Keyless.configure` callback returns an error | Wrong API key or host URL | Verify the values returned by the Journey node output fields |
-| Camera never opens | Missing active `UIViewController` context | Ensure `execute()` is called from the main thread with an active view controller in the hierarchy |
+| Camera never opens | Missing active `UIViewController` context | Ensure `enroll()` / `authenticate()` is called from the main thread with an active view controller in the hierarchy |
 | `"operationType" is required` error | Journey node misconfigured | Check the PingOne Recognize node configuration in AIC |
-| Journey returns an error after biometric success | Double submission | `execute()` submits inputs automatically — do **not** call `input()` manually again |
+| Journey returns an error after biometric success | Double submission | `enroll()` / `authenticate()` submit inputs automatically — do **not** call `input()` manually again |
 | Liveness check too strict / too lenient | Server default not suitable | Check the liveness configuration in the AIC node settings |
 
 ---

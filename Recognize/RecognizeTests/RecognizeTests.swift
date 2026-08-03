@@ -38,6 +38,20 @@ final class RecognizeErrorTests: XCTestCase {
         let error: LocalizedError = RecognizeError("test", code: 0)
         XCTAssertEqual(error.errorDescription, "test")
     }
+
+    func testDebuggingInfoDefaultsToEmpty() {
+        let error = RecognizeError("no diagnostics", code: 0)
+        XCTAssertTrue(error.debuggingInfo.isEmpty)
+    }
+
+    func testDebuggingInfoStoresProvidedValues() {
+        let error = RecognizeError(
+            "sdk failure", code: 1,
+            debuggingInfo: ["flowId": "flow-123", "sessionId": "session-456"]
+        )
+        XCTAssertEqual(error.debuggingInfo["flowId"], "flow-123")
+        XCTAssertEqual(error.debuggingInfo["sessionId"], "session-456")
+    }
 }
 
 // MARK: - RecognizeMobileSDKOptionsTests + RecognizeCallbackConstantsTests
@@ -479,17 +493,19 @@ final class RecognizeOperationTypeTests: XCTestCase {
 
 // MARK: - Testable subclasses (injectable Keyless seam)
 
-/// Subclass that replaces `configure()` with a configurable outcome.
+/// Subclass that replaces `configure()` and `performEnroll()` with configurable outcomes.
 /// Used to test error-propagation without invoking the real Keyless SDK.
 class TestableEnrollCallback: PingOneRecognizeEnrollCallback {
     var configureResult: Error? = nil
-    var enrollResult: Result<RecognizeResult, Error> = .success(RecognizeResult(signedJwt: "jwt", clientState: "state", recognizeId: "rid", selfie: nil))
+    var enrollResult: Result<RecognizeSuccess, Error> = .success(RecognizeSuccess(signedJwt: "jwt", clientState: "state", recognizeId: "rid", selfie: nil))
+    private(set) var capturedRetrieveSelfie: Bool?
 
     override func configure() async throws {
         if let error = configureResult { throw error }
     }
 
-    override func enroll(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    override func performEnroll(clientStateOverride: String?, retrieveSelfie: Bool, options: RecognizeMobileSDKOptions) async throws -> RecognizeSuccess {
+        capturedRetrieveSelfie = retrieveSelfie
         switch enrollResult {
         case .success(let r): return r
         case .failure(let e): throw e
@@ -499,24 +515,27 @@ class TestableEnrollCallback: PingOneRecognizeEnrollCallback {
 
 /// Subclass that replaces `configure()`, `performAuthenticate()`, and the enrollment-restore
 /// dispatch (`enrollWithClientStateIfNeeded`) with configurable outcomes — used to test
-/// `execute()`'s top-level clientState-empty-vs-non-empty routing in isolation.
+/// `authenticate()`'s top-level clientState-empty-vs-non-empty routing in isolation.
 class TestableAuthCallback: PingOneRecognizeAuthenticateCallback {
     var configureResult: Error? = nil
-    var performAuthenticateResult: Result<RecognizeResult, Error> = .success(RecognizeResult(signedJwt: "jwt", clientState: nil, recognizeId: nil, selfie: nil))
-    var enrollWithClientStateIfNeededResult: Result<RecognizeResult, Error> = .success(RecognizeResult(signedJwt: "jwt", clientState: "state", recognizeId: nil, selfie: nil))
+    var performAuthenticateResult: Result<RecognizeSuccess, Error> = .success(RecognizeSuccess(signedJwt: "jwt", clientState: nil, recognizeId: nil, selfie: nil))
+    var enrollWithClientStateIfNeededResult: Result<RecognizeSuccess, Error> = .success(RecognizeSuccess(signedJwt: "jwt", clientState: "state", recognizeId: nil, selfie: nil))
+    private(set) var capturedRetrieveSelfie: Bool?
 
     override func configure() async throws {
         if let error = configureResult { throw error }
     }
 
-    override func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    override func performAuthenticate(retrieveSelfie: Bool, options: RecognizeMobileSDKOptions) async throws -> RecognizeSuccess {
+        capturedRetrieveSelfie = retrieveSelfie
         switch performAuthenticateResult {
         case .success(let r): return r
         case .failure(let e): throw e
         }
     }
 
-    override func enrollWithClientStateIfNeeded(_ clientState: String, options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    override func enrollWithClientStateIfNeeded(_ clientState: String, retrieveSelfie: Bool, options: RecognizeMobileSDKOptions) async throws -> RecognizeSuccess {
+        capturedRetrieveSelfie = retrieveSelfie
         switch enrollWithClientStateIfNeededResult {
         case .success(let r): return r
         case .failure(let e): throw e
@@ -530,8 +549,8 @@ class TestableAuthCallback: PingOneRecognizeAuthenticateCallback {
 class TestableValidationAuthCallback: PingOneRecognizeAuthenticateCallback {
     var configureResult: Error? = nil
     var validateResult: PingOneRecognizeAuthenticateCallback.ValidationResult = .notEnrolled
-    var performEnrollResult: Result<RecognizeResult, Error> = .success(RecognizeResult(signedJwt: "jwt", clientState: nil, recognizeId: "rid", selfie: nil))
-    var performAuthenticateResult: Result<RecognizeResult, Error> = .success(RecognizeResult(signedJwt: "jwt", clientState: nil, recognizeId: nil, selfie: nil))
+    var performEnrollResult: Result<RecognizeSuccess, Error> = .success(RecognizeSuccess(signedJwt: "jwt", clientState: nil, recognizeId: "rid", selfie: nil))
+    var performAuthenticateResult: Result<RecognizeSuccess, Error> = .success(RecognizeSuccess(signedJwt: "jwt", clientState: nil, recognizeId: nil, selfie: nil))
 
     override func configure() async throws {
         if let error = configureResult { throw error }
@@ -541,14 +560,14 @@ class TestableValidationAuthCallback: PingOneRecognizeAuthenticateCallback {
         validateResult
     }
 
-    override func performEnroll(clientStateOverride: String?, options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    override func performEnroll(clientStateOverride: String?, retrieveSelfie: Bool, options: RecognizeMobileSDKOptions) async throws -> RecognizeSuccess {
         switch performEnrollResult {
         case .success(let r): return r
         case .failure(let e): throw e
         }
     }
 
-    override func performAuthenticate(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
+    override func performAuthenticate(retrieveSelfie: Bool, options: RecognizeMobileSDKOptions) async throws -> RecognizeSuccess {
         switch performAuthenticateResult {
         case .success(let r): return r
         case .failure(let e): throw e
@@ -605,7 +624,7 @@ final class ExecutePathTests: XCTestCase {
     func testEnrollConfigureFailurePopulatesClientError() async {
         let cb = await makeEnrollCallback()
         cb.configureResult = RecognizeError("sdk setup failed", code: 10001)
-        let result = await cb.execute()
+        let result = await cb.enroll()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "sdk setup failed")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "10001")
@@ -614,7 +633,7 @@ final class ExecutePathTests: XCTestCase {
     func testAuthConfigureFailurePopulatesClientError() async {
         let cb = await makeAuthCallback()
         cb.configureResult = RecognizeError("setup error", code: 20002)
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "setup error")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "20002")
@@ -625,7 +644,7 @@ final class ExecutePathTests: XCTestCase {
     func testEnrollFailurePopulatesClientErrorAndCode() async {
         let cb = await makeEnrollCallback()
         cb.enrollResult = .failure(RecognizeError("enroll failed", code: 30001))
-        let result = await cb.execute()
+        let result = await cb.enroll()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "enroll failed")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "30001")
@@ -633,11 +652,25 @@ final class ExecutePathTests: XCTestCase {
 
     func testEnrollSuccessReturnsResult() async {
         let cb = await makeEnrollCallback()
-        cb.enrollResult = .success(RecognizeResult(signedJwt: "signed-token", clientState: nil, recognizeId: "rec-123", selfie: nil))
-        let result = await cb.execute()
+        cb.enrollResult = .success(RecognizeSuccess(signedJwt: "signed-token", clientState: nil, recognizeId: "rec-123", selfie: nil))
+        let result = await cb.enroll()
         guard case .success(let r) = result else { return XCTFail("Expected success") }
         XCTAssertEqual(r.signedJwt, "signed-token")
         XCTAssertEqual(r.recognizeId, "rec-123")
+    }
+
+    // MARK: retrieveSelfie — always an explicit, app-level decision (never from mobileSDKOptions)
+
+    func testEnrollRetrieveSelfieDefaultsToFalse() async {
+        let cb = await makeEnrollCallback()
+        _ = await cb.enroll()
+        XCTAssertEqual(cb.capturedRetrieveSelfie, false)
+    }
+
+    func testEnrollRetrieveSelfiePassedThroughWhenSetInConfig() async {
+        let cb = await makeEnrollCallback()
+        _ = await cb.enroll { $0.retrieveSelfie = true }
+        XCTAssertEqual(cb.capturedRetrieveSelfie, true)
     }
 
     // MARK: enrollWithClientStateIfNeeded() failure — owned by the Authenticate callback,
@@ -647,7 +680,7 @@ final class ExecutePathTests: XCTestCase {
     func testEnrollWithClientStateFailurePopulatesClientError() async {
         let cb = await makeAuthCallback(clientState: "existing-state")
         cb.enrollWithClientStateIfNeededResult = .failure(RecognizeError("restore failed", code: 40001))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "restore failed")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "40001")
@@ -655,8 +688,8 @@ final class ExecutePathTests: XCTestCase {
 
     func testEnrollWithClientStateSuccessReturnsResult() async {
         let cb = await makeAuthCallback(clientState: "existing-state")
-        cb.enrollWithClientStateIfNeededResult = .success(RecognizeResult(signedJwt: "jwt-restore", clientState: "new-state", recognizeId: nil, selfie: nil))
-        let result = await cb.execute()
+        cb.enrollWithClientStateIfNeededResult = .success(RecognizeSuccess(signedJwt: "jwt-restore", clientState: "new-state", recognizeId: nil, selfie: nil))
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success") }
         XCTAssertEqual(r.signedJwt, "jwt-restore")
         XCTAssertEqual(r.clientState, "new-state")
@@ -667,7 +700,7 @@ final class ExecutePathTests: XCTestCase {
     func testAuthFailurePopulatesClientErrorAndCode() async {
         let cb = await makeAuthCallback()
         cb.performAuthenticateResult = .failure(RecognizeError("auth failed", code: 50001))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "auth failed")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "50001")
@@ -675,21 +708,41 @@ final class ExecutePathTests: XCTestCase {
 
     func testAuthSuccessReturnsResult() async {
         let cb = await makeAuthCallback()
-        cb.performAuthenticateResult = .success(RecognizeResult(signedJwt: "auth-jwt", clientState: "auth-state", recognizeId: nil, selfie: nil))
-        let result = await cb.execute()
+        cb.performAuthenticateResult = .success(RecognizeSuccess(signedJwt: "auth-jwt", clientState: "auth-state", recognizeId: nil, selfie: nil))
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success") }
         XCTAssertEqual(r.signedJwt, "auth-jwt")
         XCTAssertEqual(r.clientState, "auth-state")
     }
 
-    // MARK: clientState routing (inside PingOneRecognizeAuthenticateCallback.execute())
+    // MARK: retrieveSelfie — always an explicit, app-level decision (never from mobileSDKOptions)
+
+    func testAuthRetrieveSelfieDefaultsToFalse() async {
+        let cb = await makeAuthCallback()
+        _ = await cb.authenticate()
+        XCTAssertEqual(cb.capturedRetrieveSelfie, false)
+    }
+
+    func testAuthRetrieveSelfiePassedThroughWhenSetInConfig() async {
+        let cb = await makeAuthCallback()
+        _ = await cb.authenticate { $0.retrieveSelfie = true }
+        XCTAssertEqual(cb.capturedRetrieveSelfie, true)
+    }
+
+    func testEnrollWithClientStateRetrieveSelfiePassedThrough() async {
+        let cb = await makeAuthCallback(clientState: "existing-state")
+        _ = await cb.authenticate { $0.retrieveSelfie = true }
+        XCTAssertEqual(cb.capturedRetrieveSelfie, true)
+    }
+
+    // MARK: clientState routing (inside PingOneRecognizeAuthenticateCallback.authenticate())
 
     func testEmptyClientStateRoutesToAuthenticate() async {
         let cb = await makeAuthCallback()
         // performAuthenticateResult is success; enrollWithClientStateIfNeededResult would fail if wrongly called
-        cb.performAuthenticateResult = .success(RecognizeResult(signedJwt: "auth-jwt", clientState: nil, recognizeId: nil, selfie: nil))
+        cb.performAuthenticateResult = .success(RecognizeSuccess(signedJwt: "auth-jwt", clientState: nil, recognizeId: nil, selfie: nil))
         cb.enrollWithClientStateIfNeededResult = .failure(RecognizeError("should not be called", code: 9999))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success via authenticate path") }
         XCTAssertEqual(r.signedJwt, "auth-jwt")
     }
@@ -697,9 +750,9 @@ final class ExecutePathTests: XCTestCase {
     func testNonEmptyClientStateRoutesToEnrollWithClientStateIfNeeded() async {
         let cb = await makeAuthCallback(clientState: "existing-state")
         // enrollWithClientStateIfNeededResult is success; performAuthenticateResult would fail if wrongly called
-        cb.enrollWithClientStateIfNeededResult = .success(RecognizeResult(signedJwt: "restore-jwt", clientState: "new-state", recognizeId: nil, selfie: nil))
+        cb.enrollWithClientStateIfNeededResult = .success(RecognizeSuccess(signedJwt: "restore-jwt", clientState: "new-state", recognizeId: nil, selfie: nil))
         cb.performAuthenticateResult = .failure(RecognizeError("should not be called", code: 9999))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success via enrollWithClientStateIfNeeded path") }
         XCTAssertEqual(r.signedJwt, "restore-jwt")
     }
@@ -712,7 +765,7 @@ final class ExecutePathTests: XCTestCase {
         }
         let cb = await makeAuthCallback()
         cb.performAuthenticateResult = .failure(PlainError())
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "plain error message")
         // No error code set for non-RecognizeError
@@ -739,10 +792,10 @@ final class ExecutePathTests: XCTestCase {
     func testValidationActiveRoutesToAuthenticate() async {
         let cb = await makeValidationCallback()
         cb.validateResult = .active
-        cb.performAuthenticateResult = .success(RecognizeResult(signedJwt: "auth-jwt", clientState: nil, recognizeId: nil, selfie: nil))
+        cb.performAuthenticateResult = .success(RecognizeSuccess(signedJwt: "auth-jwt", clientState: nil, recognizeId: nil, selfie: nil))
         // performEnrollResult would fail if wrongly called
         cb.performEnrollResult = .failure(RecognizeError("should not enroll", code: 9999))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success via authenticate path") }
         XCTAssertEqual(r.signedJwt, "auth-jwt")
     }
@@ -750,10 +803,10 @@ final class ExecutePathTests: XCTestCase {
     func testValidationNotEnrolledRoutesToEnroll() async {
         let cb = await makeValidationCallback()
         cb.validateResult = .notEnrolled
-        cb.performEnrollResult = .success(RecognizeResult(signedJwt: "enroll-jwt", clientState: nil, recognizeId: "rid", selfie: nil))
+        cb.performEnrollResult = .success(RecognizeSuccess(signedJwt: "enroll-jwt", clientState: nil, recognizeId: "rid", selfie: nil))
         // performAuthenticateResult would fail if wrongly called
         cb.performAuthenticateResult = .failure(RecognizeError("should not authenticate", code: 9999))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .success(let r) = result else { return XCTFail("Expected success via enroll path") }
         XCTAssertEqual(r.signedJwt, "enroll-jwt")
     }
@@ -764,7 +817,7 @@ final class ExecutePathTests: XCTestCase {
         // Neither performEnroll nor performAuthenticate should be called
         cb.performEnrollResult = .failure(RecognizeError("should not enroll", code: 9999))
         cb.performAuthenticateResult = .failure(RecognizeError("should not authenticate", code: 9999))
-        let result = await cb.execute()
+        let result = await cb.authenticate()
         guard case .failure = result else { return XCTFail("Expected failure") }
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientError, in: cb), "device locked")
         XCTAssertEqual(inputValue(for: JourneyConstants.inputClientErrorCode, in: cb), "60001")

@@ -15,13 +15,18 @@ public struct RecognizeError: Error, LocalizedError, Sendable {
     public let message: String
     public let code: Int
 
+    /// Diagnostic information forwarded from the underlying `KeylessSDKError`, if any
+    /// (e.g. `flowId`, `sessionId`, `underlyingError`, `stacktrace`).
+    public let debuggingInfo: [String: String]
+
     /// A localized description of the error.
     public var errorDescription: String? {
         return message
     }
 
-    public init(_ message: String, code: Int) {
+    public init(_ message: String, code: Int, debuggingInfo: [String: String] = [:]) {
         self.message = message
         self.code = code
+        self.debuggingInfo = debuggingInfo
     }
 }

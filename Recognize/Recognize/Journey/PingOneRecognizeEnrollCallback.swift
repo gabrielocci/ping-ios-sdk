@@ -21,20 +21,25 @@ import PingJourneyPlugin
 /// ```swift
 /// if let callback = node.callbacks.first(where: { $0 is PingOneRecognizeEnrollCallback })
 ///         as? PingOneRecognizeEnrollCallback {
-///     let result = await callback.execute()
+///     let result = await callback.enroll()
 /// }
 /// ```
 open class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @unchecked Sendable {
 
     /// Configures the Keyless SDK and performs the enrollment operation.
     ///
-    /// - Returns: `.success(RecognizeResult)` on completion, or `.failure(error)` if any step fails.
+    /// - Parameter block: Configures the operation, e.g. `{ $0.retrieveSelfie = true }`.
+    ///   `retrieveSelfie` defaults to `false` and is always an explicit, app-level decision —
+    ///   it is never read from the server's `mobileSDKOptions`.
+    /// - Returns: `.success(RecognizeSuccess)` on completion, or `.failure(error)` if any step fails.
     ///   On failure the `clientError` input field is automatically populated.
-    public func execute() async -> Result<RecognizeResult, Error> {
+    public func enroll(_ block: @Sendable (RecognizeEnrollConfig) -> Void = { _ in }) async -> Result<RecognizeSuccess, Error> {
+        let config = RecognizeEnrollConfig()
+        block(config)
         do {
             try await configure()
             try Task.checkCancellation()
-            let result = try await enroll(options: mobileSDKOptions)
+            let result = try await performEnroll(retrieveSelfie: config.retrieveSelfie, options: mobileSDKOptions)
             return .success(result)
         } catch {
             let message = error.localizedDescription.isEmpty
@@ -46,14 +51,6 @@ open class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @unchecked
             }
             return .failure(error)
         }
-    }
-
-    // MARK: - Enrollment Operations
-
-    /// Performs the biometric enrollment operation. Thin wrapper over the shared
-    /// `performEnroll(clientStateOverride:options:)` — kept `open` for testability.
-    open func enroll(options: RecognizeMobileSDKOptions) async throws -> RecognizeResult {
-        try await performEnroll(options: options)
     }
 }
 #endif

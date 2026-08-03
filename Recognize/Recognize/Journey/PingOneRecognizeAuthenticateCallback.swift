@@ -17,7 +17,7 @@ import PingJourneyPlugin
 ///
 /// Returned by `RecognizeCallback` when the server sets `operationType` to `AUTHENTICATE`.
 ///
-/// When the server also supplies a `clientState`, `execute()` first checks whether the
+/// When the server also supplies a `clientState`, `authenticate()` first checks whether the
 /// device is already enrolled: if not, it runs enrollment with that `clientState` instead
 /// of authenticating (the enrollment-restore path) — matching Android's `authenticate()`.
 ///
@@ -25,7 +25,7 @@ import PingJourneyPlugin
 /// ```swift
 /// if let callback = node.callbacks.first(where: { $0 is PingOneRecognizeAuthenticateCallback })
 ///         as? PingOneRecognizeAuthenticateCallback {
-///     let result = await callback.execute()
+///     let result = await callback.authenticate()
 /// }
 /// ```
 open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unchecked Sendable {
@@ -33,17 +33,27 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
     /// Configures the Keyless SDK and performs the authentication (or enrollment-restore)
     /// operation.
     ///
-    /// - Returns: `.success(RecognizeResult)` on completion, or `.failure(error)` if any step fails.
+    /// - Parameter block: Configures the operation, e.g. `{ $0.retrieveSelfie = true }`.
+    ///   `retrieveSelfie` defaults to `false` and is always an explicit, app-level decision —
+    ///   it is never read from the server's `mobileSDKOptions`. Applies to the enrollment-restore
+    ///   path too, since it runs under this same call.
+    /// - Returns: `.success(RecognizeSuccess)` on completion, or `.failure(error)` if any step fails.
     ///   On failure the `clientError` input field is automatically populated.
-    public func execute() async -> Result<RecognizeResult, Error> {
+    public func authenticate(
+        _ block: @Sendable (RecognizeAuthenticateConfig) -> Void = { _ in }
+    ) async -> Result<RecognizeSuccess, Error> {
+        let config = RecognizeAuthenticateConfig()
+        block(config)
         do {
             try await configure()
             try Task.checkCancellation()
-            let result: RecognizeResult
+            let result: RecognizeSuccess
             if !clientState.isEmpty {
-                result = try await enrollWithClientStateIfNeeded(clientState, options: mobileSDKOptions)
+                result = try await enrollWithClientStateIfNeeded(
+                    clientState, retrieveSelfie: config.retrieveSelfie, options: mobileSDKOptions
+                )
             } else {
-                result = try await performAuthenticate(options: mobileSDKOptions)
+                result = try await performAuthenticate(retrieveSelfie: config.retrieveSelfie, options: mobileSDKOptions)
             }
             return .success(result)
         } catch {
@@ -66,11 +76,11 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
     /// the internal-init `KeylessSDKError` type:
     /// - `.active` — device is enrolled, proceed with authentication.
     /// - `.notEnrolled` — device is not enrolled, proceed with enrollment.
-    /// - `.otherError(message:code:)` — unexpected error, propagate to caller.
+    /// - `.otherError(message:code:debuggingInfo:)` — unexpected error, propagate to caller.
     public enum ValidationResult {
         case active
         case notEnrolled
-        case otherError(message: String, code: Int)
+        case otherError(message: String, code: Int, debuggingInfo: [String: String] = [:])
     }
 
     /// Validates whether the current device is active (enrolled) in the Keyless SDK.
@@ -86,7 +96,9 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
                 if case .integrationError(let ie) = error.kind, ie == .userNotEnrolled {
                     continuation.resume(returning: .notEnrolled)
                 } else {
-                    continuation.resume(returning: .otherError(message: error.message, code: error.code))
+                    continuation.resume(returning: .otherError(
+                        message: error.message, code: error.code, debuggingInfo: error.debuggingInfo
+                    ))
                 }
             }
         }
@@ -100,18 +112,19 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
     /// - Any other error is propagated as a `RecognizeError`.
     open func enrollWithClientStateIfNeeded(
         _ clientState: String,
+        retrieveSelfie: Bool = false,
         options: RecognizeMobileSDKOptions
-    ) async throws -> RecognizeResult {
+    ) async throws -> RecognizeSuccess {
         switch await validateUserDeviceActive() {
         case .active:
-            return try await performAuthenticate(options: options)
-        case .otherError(let message, let code):
-            throw RecognizeError(message, code: code)
+            return try await performAuthenticate(retrieveSelfie: retrieveSelfie, options: options)
+        case .otherError(let message, let code, let debuggingInfo):
+            throw RecognizeError(message, code: code, debuggingInfo: debuggingInfo)
         case .notEnrolled:
             break
         }
 
-        return try await performEnroll(clientStateOverride: clientState, options: options)
+        return try await performEnroll(clientStateOverride: clientState, retrieveSelfie: retrieveSelfie, options: options)
     }
 }
 #endif
