@@ -408,11 +408,17 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         if let dict = value as? [String: String] { return dict }
         if let dict = value as? [String: Any] {
             return dict.reduce(into: [:]) { result, pair in
-                // Check Bool before falling through to interpolation: __NSCFBoolean (from
-                // JSONSerialization) is a subclass of NSNumber and interpolates as "1"/"0",
-                // which Bool.init(String) doesn't recognise. Cast to Bool first.
-                if let boolValue = pair.value as? Bool {
-                    result[pair.key] = boolValue ? "true" : "false"
+                // `pair.value as? Bool` is not a reliable boolean check: on Apple platforms,
+                // any NSNumber — including a plain integer like `cameraDelaySeconds: 1` from
+                // JSONSerialization — casts to Bool successfully via NSNumber.boolValue. That
+                // would coerce a real "1" or "0" into "true"/"false", which `Int.init(String)`
+                // then fails to parse, silently falling back to the SDK default.
+                //
+                // CFGetTypeID narrows the check to values that are genuinely backed by
+                // CFBoolean (JSON `true`/`false`, or a native Swift `Bool`), leaving integer
+                // NSNumbers to fall through to normal string interpolation below.
+                if let number = pair.value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() {
+                    result[pair.key] = number.boolValue ? "true" : "false"
                 } else {
                     result[pair.key] = "\(pair.value)"
                 }

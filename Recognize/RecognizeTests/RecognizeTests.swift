@@ -429,6 +429,21 @@ final class StringDictionaryTests: XCTestCase {
         XCTAssertEqual(callback.mobileSDKOptions.showSuccessFeedback, true)
         XCTAssertEqual(callback.mobileSDKOptions.livenessEnvironmentAware, true)
     }
+
+    func testIntegerZeroAndOneAreNotMistakenForBooleans() throws {
+        // Regression test: NSNumber(1)/NSNumber(0) from JSONSerialization must NOT be
+        // coerced to "true"/"false" just because `as? Bool` succeeds for any NSNumber on
+        // Apple platforms — only genuine CFBoolean-backed values should be.
+        let json = """
+        {"cameraDelaySeconds": 1, "numberOfEnrollmentCircuits": 0, "showSuccessFeedback": true}
+        """.data(using: .utf8)!
+        let parsed = try JSONSerialization.jsonObject(with: json) as! [String: Any]
+        let callback = RecognizeCallback()
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: parsed)
+        XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 1)
+        XCTAssertEqual(callback.mobileSDKOptions.numberOfEnrollmentCircuits, 0)
+        XCTAssertEqual(callback.mobileSDKOptions.showSuccessFeedback, true)
+    }
 }
 
 
