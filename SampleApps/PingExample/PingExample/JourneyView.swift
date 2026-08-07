@@ -286,7 +286,7 @@ struct JourneyNodeView: View {
                     DeviceSigningVerifierCallbackView(callback: deviceSigningVerifierCallback, onNext: onNext)
 
                 case let recognizeCallback as RecognizeCallback:
-                    RecognizeCallbackView(callback: recognizeCallback, onNext: onNext)
+                    RecognizeCallbackView(callback: recognizeCallback, onNext: onNext).id(recognizeCallback.id)
 
                 case _ as HiddenValueCallback:
                     EmptyView()
