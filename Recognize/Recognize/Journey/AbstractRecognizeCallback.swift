@@ -260,22 +260,11 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeSuccess, Error>) in
-            Keyless.enroll(configuration: enrollConfig) { [weak self] result in
+        let enrollmentResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<EnrollmentSuccess, Error>) in
+            Keyless.enroll(configuration: enrollConfig) { result in
                 switch result {
                 case .success(let enrollmentResult):
-                    if let keylessId = enrollmentResult.keylessId { self?.setRecognizeId(keylessId) }
-                    if let jwt = enrollmentResult.signedJwt { self?.setSignedJwt(jwt) }
-                    if let state = enrollmentResult.clientState { self?.setClientState(state) }
-                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
-                        self?.setDevicePublicSigningKey(key)
-                    }
-                    continuation.resume(returning: RecognizeSuccess(
-                        signedJwt: enrollmentResult.signedJwt,
-                        clientState: enrollmentResult.clientState,
-                        recognizeId: enrollmentResult.keylessId,
-                        selfie: enrollmentResult.enrollmentFrame
-                    ))
+                    continuation.resume(returning: enrollmentResult)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(
@@ -287,6 +276,19 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                 }
             }
         }
+
+        if let keylessId = enrollmentResult.keylessId { setRecognizeId(keylessId) }
+        if let jwt = enrollmentResult.signedJwt { setSignedJwt(jwt) }
+        if let state = enrollmentResult.clientState { setClientState(state) }
+        if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+            setDevicePublicSigningKey(key)
+        }
+        return RecognizeSuccess(
+            signedJwt: enrollmentResult.signedJwt,
+            clientState: enrollmentResult.clientState,
+            recognizeId: enrollmentResult.keylessId,
+            selfie: enrollmentResult.enrollmentFrame
+        )
     }
 
     /// Performs the biometric authentication operation using `BiomAuthConfig`.
@@ -318,21 +320,11 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RecognizeSuccess, Error>) in
-            Keyless.authenticate(configuration: authConfig) { [weak self] result in
+        let authResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<AuthenticationSuccess, Error>) in
+            Keyless.authenticate(configuration: authConfig) { result in
                 switch result {
-                case .success(let response):
-                    if let jwt = response.signedJwt { self?.setSignedJwt(jwt) }
-                    if let state = response.clientState { self?.setClientState(state) }
-                    if case .success(let key) = Keyless.getDevicePublicSigningKey() {
-                        self?.setDevicePublicSigningKey(key)
-                    }
-                    continuation.resume(returning: RecognizeSuccess(
-                        signedJwt: response.signedJwt,
-                        clientState: response.clientState,
-                        recognizeId: nil,
-                        selfie: response.authenticationFrame
-                    ))
+                case .success(let authResult):
+                    continuation.resume(returning: authResult)
                 case .failure(let error):
                     if let sdkError = error as? KeylessSDKError {
                         continuation.resume(throwing: RecognizeError(
@@ -344,6 +336,18 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
                 }
             }
         }
+
+        if let jwt = authResult.signedJwt { setSignedJwt(jwt) }
+        if let state = authResult.clientState { setClientState(state) }
+        if case .success(let key) = Keyless.getDevicePublicSigningKey() {
+            setDevicePublicSigningKey(key)
+        }
+        return RecognizeSuccess(
+            signedJwt: authResult.signedJwt,
+            clientState: authResult.clientState,
+            recognizeId: nil,
+            selfie: authResult.authenticationFrame
+        )
     }
 
     // MARK: - Keyless SDK Configuration
