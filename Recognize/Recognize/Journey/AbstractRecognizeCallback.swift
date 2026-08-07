@@ -260,7 +260,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             presentationStyle: Self.enrollPresentationStyle(from: options.presentation)
         )
 
-        let enrollmentResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<EnrollmentSuccess, Error>) in
+        let enrollmentResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Keyless.EnrollmentSuccess, Error>) in
             Keyless.enroll(configuration: enrollConfig) { result in
                 switch result {
                 case .success(let enrollmentResult):
@@ -320,7 +320,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             presentationStyle: Self.authPresentationStyle(from: options.presentationStyle)
         )
 
-        let authResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<AuthenticationSuccess, Error>) in
+        let authResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Keyless.AuthenticationSuccess, Error>) in
             Keyless.authenticate(configuration: authConfig) { result in
                 switch result {
                 case .success(let authResult):

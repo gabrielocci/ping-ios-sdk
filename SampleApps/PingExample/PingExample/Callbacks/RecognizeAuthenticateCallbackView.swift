@@ -1,5 +1,5 @@
 //
-//  RecognizeCallbackView.swift
+//  RecognizeAuthenticateCallbackView.swift
 //  PingExample
 //
 //  Copyright (c) 2026 Ping Identity Corporation. All rights reserved.
@@ -11,11 +11,11 @@
 import SwiftUI
 import PingRecognize
 
-struct RecognizeCallbackView: View {
-    @StateObject private var viewModel: RecognizeCallbackViewModel
+struct RecognizeAuthenticateCallbackView: View {
+    @StateObject private var viewModel: RecognizeAuthenticateViewModel
 
-    init(callback: RecognizeCallback, onNext: @escaping () -> Void) {
-        self._viewModel = StateObject(wrappedValue: RecognizeCallbackViewModel(callback: callback, onNext: onNext))
+    init(callback: PingOneRecognizeAuthenticateCallback, onNext: @escaping () -> Void) {
+        self._viewModel = StateObject(wrappedValue: RecognizeAuthenticateViewModel(callback: callback, onNext: onNext))
     }
 
     var body: some View {
@@ -24,7 +24,7 @@ struct RecognizeCallbackView: View {
                 .progressViewStyle(CircularProgressViewStyle())
                 .scaleEffect(1.5)
 
-            Text("Processing biometric operation...")
+            Text("Processing biometric authentication...")
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,13 +38,13 @@ struct RecognizeCallbackView: View {
     }
 }
 
-class RecognizeCallbackViewModel: ObservableObject {
+class RecognizeAuthenticateViewModel: ObservableObject {
     private var task: Task<Void, Never>?
-    private let callback: RecognizeCallback
+    private let callback: PingOneRecognizeAuthenticateCallback
     private let onNext: () -> Void
     private var hasStarted = false
 
-    init(callback: RecognizeCallback, onNext: @escaping () -> Void) {
+    init(callback: PingOneRecognizeAuthenticateCallback, onNext: @escaping () -> Void) {
         self.callback = callback
         self.onNext = onNext
     }
@@ -55,15 +55,15 @@ class RecognizeCallbackViewModel: ObservableObject {
         hasStarted = true
 
         task = Task {
-            let result = await callback.execute()
+            let result = await callback.authenticate()
             switch result {
             case .success:
-                print("Recognize operation succeeded")
+                print("Recognize authentication succeeded")
             case .failure(let error):
                 if let recognizeError = error as? RecognizeError {
-                    print("Recognize operation failed [\(recognizeError.code)]: \(recognizeError.message)")
+                    print("Recognize authentication failed [\(recognizeError.code)]: \(recognizeError.message)")
                 } else {
-                    print("Recognize operation failed: \(error.localizedDescription)")
+                    print("Recognize authentication failed: \(error.localizedDescription)")
                 }
             }
 

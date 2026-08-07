@@ -197,7 +197,8 @@ struct JourneyNodeView: View {
             callback is FidoAuthenticationCallback ||
             callback is DeviceBindingCallback ||
             callback is DeviceSigningVerifierCallback ||
-            callback is RecognizeCallback
+            callback is PingOneRecognizeEnrollCallback ||
+            callback is PingOneRecognizeAuthenticateCallback
         }
     }
     
@@ -285,8 +286,11 @@ struct JourneyNodeView: View {
                 case let deviceSigningVerifierCallback as DeviceSigningVerifierCallback:
                     DeviceSigningVerifierCallbackView(callback: deviceSigningVerifierCallback, onNext: onNext)
 
-                case let recognizeCallback as RecognizeCallback:
-                    RecognizeCallbackView(callback: recognizeCallback, onNext: onNext).id(recognizeCallback.id)
+                case let recognizeEnrollCallback as PingOneRecognizeEnrollCallback:
+                    RecognizeEnrollCallbackView(callback: recognizeEnrollCallback, onNext: onNext).id(recognizeEnrollCallback.id)
+
+                case let recognizeAuthCallback as PingOneRecognizeAuthenticateCallback:
+                    RecognizeAuthenticateCallbackView(callback: recognizeAuthCallback, onNext: onNext).id(recognizeAuthCallback.id)
 
                 case _ as HiddenValueCallback:
                     EmptyView()
