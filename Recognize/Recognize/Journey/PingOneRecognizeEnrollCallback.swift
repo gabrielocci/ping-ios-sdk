@@ -42,13 +42,7 @@ open class PingOneRecognizeEnrollCallback: AbstractRecognizeCallback, @unchecked
             let result = try await performEnroll(retrieveSelfie: config.retrieveSelfie, options: mobileSDKOptions)
             return .success(result)
         } catch {
-            let message = error.localizedDescription.isEmpty
-                ? JourneyConstants.clientError
-                : error.localizedDescription
-            self.error(message)
-            if let recognizeError = error as? RecognizeError {
-                setClientErrorCode(String(recognizeError.code))
-            }
+            report(error)
             return .failure(error)
         }
     }

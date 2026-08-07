@@ -249,7 +249,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             clientState: effectiveClientState.isEmpty ? nil : effectiveClientState,
             operationInfo: operationInfo,
             jwtSigningInfo: jwtSigningInfo(from: transactionData),
-            livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
+            livenessConfiguration: Self.enrollLivenessConfiguration(from: options.livenessConfiguration),
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomEnrollConfig.DEFAULT_DELAY,
             generatingClientState: generateClientState ? .backup : nil,
@@ -307,7 +307,7 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
             )
 
         let authConfig = BiomAuthConfig(
-            livenessConfiguration: Self.livenessConfiguration(from: options.livenessConfiguration),
+            livenessConfiguration: Self.authLivenessConfiguration(from: options.livenessConfiguration),
             livenessEnvironmentAware: options.livenessEnvironmentAware ?? BiomAuthConfig.DEFAULT_LIVENESS_ENV_AWARE,
             cameraDelaySeconds: options.cameraDelaySeconds ?? BiomAuthConfig.DEFAULT_CAMERA_DELAY_SECONDS,
             generatingClientState: generateClientState ? .backup : nil,
@@ -375,12 +375,27 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         transactionData.isEmpty ? nil : JwtSigningInfo(claimTransactionData: transactionData, audience: audience)
     }
 
-    /// Maps the server liveness string (e.g. `"LEVEL_1"`) to `Keyless.LivenessConfiguration`.
-    ///
-    /// Uses `rawValue` init so new SDK levels work without a code change.
+    /// Maps the server liveness string to `Keyless.LivenessConfiguration` for enrollment.
     /// Falls back to `BiomEnrollConfig.DEFAULT_LIVENESS_CONFIG` for unrecognised values.
-    public static func livenessConfiguration(from string: String) -> Keyless.LivenessConfiguration {
+    public static func enrollLivenessConfiguration(from string: String) -> Keyless.LivenessConfiguration {
         Keyless.LivenessConfiguration(rawValue: string.uppercased()) ?? BiomEnrollConfig.DEFAULT_LIVENESS_CONFIG
+    }
+
+    /// Maps the server liveness string to `Keyless.LivenessConfiguration` for authentication.
+    /// Falls back to `BiomAuthConfig.DEFAULT_LIVENESS_CONFIG` for unrecognised values.
+    public static func authLivenessConfiguration(from string: String) -> Keyless.LivenessConfiguration {
+        Keyless.LivenessConfiguration(rawValue: string.uppercased()) ?? BiomAuthConfig.DEFAULT_LIVENESS_CONFIG
+    }
+
+    /// Records an error into the `clientError` and, if a `RecognizeError`, `clientErrorCode` input fields.
+    func report(_ error: Error) {
+        let message = error.localizedDescription.isEmpty
+            ? JourneyConstants.clientError
+            : error.localizedDescription
+        self.error(message)
+        if let recognizeError = error as? RecognizeError {
+            setClientErrorCode(String(recognizeError.code))
+        }
     }
 
     /// Maps the server `presentation` string to `BiomEnrollConfig.PresentationStyle`; not `RawRepresentable`, so an explicit switch is required.
@@ -465,7 +480,6 @@ extension JourneyConstants {
     static let generateClientState = "generateClientState"
     static let clientState = "clientState"
     static let mobileSDKOptions = "mobileSDKOptions"
-    static let webSDKOptions = "webSDKOptions"
 
     // MARK: PingOneRecognize — mobile SDK option keys
 
