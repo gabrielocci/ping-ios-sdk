@@ -3,6 +3,9 @@
 - Added `ImageCollector` to support image display in DaVinci forms [SDKS-5143]
 - Added `MetadataCollector` to support the DaVinci SDK Integrator connector's pause/resume model, allowing the app to invoke on-device SDKs and return a result or error before the flow continues [SDKS-5142]
 
+#### Fixed
+- Fixed `OidcWebClient` `.authSession` and `.ephemeralAuthSession` not completing for Universal Link (https) redirect URIs [SDKS-5239]
+
 ## [2.1.0]
 #### Added
 - Added OAuth 2.0 Device Authorization Grant (RFC 8628) support [SDKS-4785]
