@@ -342,10 +342,12 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         if case .success(let key) = Keyless.getDevicePublicSigningKey() {
             setDevicePublicSigningKey(key)
         }
+        let userId = try? Keyless.getUserId().get()
+        if let userId { setRecognizeId(userId) }
         return RecognizeSuccess(
             signedJwt: authResult.signedJwt,
             clientState: authResult.clientState,
-            recognizeId: nil,
+            recognizeId: userId,
             selfie: authResult.authenticationFrame
         )
     }
