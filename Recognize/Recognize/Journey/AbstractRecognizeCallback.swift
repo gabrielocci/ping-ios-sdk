@@ -280,9 +280,6 @@ open class AbstractRecognizeCallback: AbstractCallback, ContinueNodeAware, @unch
         if let keylessId = enrollmentResult.keylessId { setRecognizeId(keylessId) }
         if let jwt = enrollmentResult.signedJwt { setSignedJwt(jwt) }
         if let state = enrollmentResult.clientState { setClientState(state) }
-        if case .success(let key) = Keyless.getDevicePublicSigningKey() {
-            setDevicePublicSigningKey(key)
-        }
         return RecognizeSuccess(
             signedJwt: enrollmentResult.signedJwt,
             clientState: enrollmentResult.clientState,
