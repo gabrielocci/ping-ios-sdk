@@ -1,5 +1,5 @@
 {
-  "originHash" : "df33c5bb31a7748f92ac3f2450daa982f115087bca620eb307cd956620e34530",
+  "originHash" : "e4d63bc950dc0ecf53fb3730f7f7518535f094fc08c5dcab2347e6155ce37312",
   "pins" : [
     {
       "identity" : "app-check",
@@ -83,12 +83,20 @@
       }
     },
     {
+      "identity" : "keyless.mobile-sdk",
+      "kind" : "registry",
+      "location" : "",
+      "state" : {
+        "version" : "6.0.1"
+      }
+    },
+    {
       "identity" : "pingone-signals-sdk-ios",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pingidentity/pingone-signals-sdk-ios",
       "state" : {
-        "revision" : "bf37bd85fa909428d764630c71cf0d4f3d2d7e05",
-        "version" : "5.3.0"
+        "revision" : "e41f7070fdbb43dd7762274ec610c099256a7c7e",
+        "version" : "5.4.0"
       }
     },
     {
@@ -105,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/GoogleCloudPlatform/recaptcha-enterprise-mobile-sdk",
       "state" : {
-        "revision" : "fb634e89a36fd91725ad654d5576d800c061b37d",
-        "version" : "18.8.2"
+        "revision" : "85588690041e63784be7bcb4b631c32565127ba2",
+        "version" : "18.9.1"
       }
     },
     {
