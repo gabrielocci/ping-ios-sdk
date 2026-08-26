@@ -336,7 +336,8 @@ let package = Package(
                 "PingRecognize",
                 .product(name: "KeylessSDK", package: "keyless.mobile-sdk", condition: .when(platforms: [.iOS]))
             ],
-            path: "Recognize/RecognizeTests"
+            path: "Recognize/RecognizeTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
 )
