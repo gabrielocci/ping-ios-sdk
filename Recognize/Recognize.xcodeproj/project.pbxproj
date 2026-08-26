@@ -22,9 +22,7 @@
 		CA001033FACE000000000001 /* PingOneRecognizeAuthenticateCallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA001023FACE000000000001 /* PingOneRecognizeAuthenticateCallback.swift */; };
 		CA001035FACE000000000001 /* RecognizeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA001025FACE000000000001 /* RecognizeConfig.swift */; };
 		CA001003FACE000000000001 /* PingJourneyPlugin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA001013FACE000000000001 /* PingJourneyPlugin.framework */; };
-		CA001004FACE000000000001 /* PingJourneyPlugin.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA001013FACE000000000001 /* PingJourneyPlugin.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CA001005FACE000000000001 /* PingOrchestrate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; };
-		CA001006FACE000000000001 /* PingOrchestrate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CA001014FACE000000000001 /* PingOrchestrate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CA001007FACE000000000001 /* KeylessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CA001009FACE000000000001 /* KeylessSDK */; };
 		CA001007FACE000000000002 /* KeylessSDK in Frameworks (Tests) */ = {isa = PBXBuildFile; productRef = CA00100AFACE000000000001 /* KeylessSDK */; };
 		CA001003FACE000000000002 /* PingJourneyPlugin.framework in Frameworks (Tests) */ = {isa = PBXBuildFile; fileRef = CA001013FACE000000000001 /* PingJourneyPlugin.framework */; };
@@ -40,21 +38,6 @@
 			remoteInfo = PingRecognize;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		CA001015FACE000000000001 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				CA001004FACE000000000001 /* PingJourneyPlugin.framework in Embed Frameworks */,
-				CA001006FACE000000000001 /* PingOrchestrate.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1747A8CDA0A1838CEDF588C9 /* RecognizeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecognizeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -197,7 +180,6 @@
 				1EDC019429B4010FCEE4928C /* Sources */,
 				7AAC3EC3D793FD8C419EC0ED /* Frameworks */,
 				4A5F4F94DD12511727FB1914 /* Resources */,
-				CA001015FACE000000000001 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
