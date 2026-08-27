@@ -109,16 +109,18 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
         retrieveSelfie: Bool = false,
         options: RecognizeMobileSDKOptions
     ) async throws -> RecognizeSuccess {
-        switch await validateUserDeviceActive() {
+        let validation = await validateUserDeviceActive()
+
+        switch validation {
         case .active:
+            try Task.checkCancellation()
             return try await performAuthenticate(retrieveSelfie: retrieveSelfie, options: options)
         case .otherError(let message, let code, let debuggingInfo):
             throw RecognizeError(message, code: code, debuggingInfo: debuggingInfo)
         case .notEnrolled:
-            break
+            try Task.checkCancellation()
+            return try await performEnroll(clientStateOverride: clientState, retrieveSelfie: retrieveSelfie, options: options)
         }
-
-        return try await performEnroll(clientStateOverride: clientState, retrieveSelfie: retrieveSelfie, options: options)
     }
 }
 #endif
