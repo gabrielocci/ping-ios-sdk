@@ -1,3 +1,15 @@
+## [UNRELEASED]
+#### Added
+- Added `ImageCollector` to support image display in DaVinci forms [SDKS-5143]
+- Added `MetadataCollector` to support the DaVinci SDK Integrator connector's pause/resume model, allowing the app to invoke on-device SDKs and return a result or error before the flow continues [SDKS-5142]
+- Added `trigger` and `isAutomatic` to the DaVinci FIDO collectors [SDKS-4552]
+- Added Facebook Limited Login (OIDC ID-token flow) support in `PingExternalIdPFacebook`. Toggle via the new `facebookLimitedLoginEnabled` property on `IdpCollector` (DaVinci) or on `FacebookHandler` / `FacebookRequestHandler` directly; defaults to `false` (classic OAuth2). On the Journey path, provider names containing `fb-limited` automatically opt into Limited Login [SDKS-5160, SDKS-5161, SDKS-5162]
+- Bumped `facebook-ios-sdk` to 18.1.0 [SDKS-5160]
+
+#### Fixed
+- Fixed `OidcWebClient` `.authSession` and `.ephemeralAuthSession` not completing for Universal Link (https) redirect URIs [SDKS-5239]
+- Fixed FIDO registration/authentication not launching automatically when the DaVinci form's `trigger` property is not `BUTTON` [SDKS-4552]
+
 ## [2.1.0]
 #### Added
 - Added OAuth 2.0 Device Authorization Grant (RFC 8628) support [SDKS-4785]
@@ -14,6 +26,7 @@
 - Added `PingRecognize` module for PingOne Recognize biometric authentication (enrollment and authentication) [P1RECMOB-3663]
 - Added `AuthMigration` module for migrating existing sessions from the legacy ForgeRock SDK [SDKS-4773]
 - Added Page Node description, header, and footer support [SDKS-4762]
+- Added AM/AIC backchannel authentication support to the `PingJourney` module via `Journey.start(backchannelUri:configure:)` [SDKS-5156]
 
 #### Fixed
 - Fixed permanent authentication failure after iCloud device migration caused by Secure Enclave key mismatch [SDKS-5172]

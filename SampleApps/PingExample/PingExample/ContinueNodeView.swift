@@ -83,20 +83,33 @@ struct ContinueNodeView: View {
                 case let protectCollector as ProtectCollector:
                     ProtectView(field: protectCollector, onNodeUpdated: onNodeUpdated).id(protectCollector.hash)
                 case let fidoRegistrationCollector as FidoRegistrationCollector:
+                    // Use ObjectIdentifier (object identity) to force SwiftUI to recreate
+                    // FidoRegistrationCollectorView — and restart its .task — whenever a new
+                    // FidoRegistrationCollector instance is produced. ForEach keys on
+                    // collector.key, which stays stable across re-renders of the same step, so
+                    // without this the automatic ceremony would never re-launch after a retry.
                     FidoRegistrationCollectorView(collector: fidoRegistrationCollector, onNext: { onNext(true) })
+                        .id(ObjectIdentifier(fidoRegistrationCollector))
                 case let fidoAuthenticationCollector as FidoAuthenticationCollector:
+                    // See the comment above FidoRegistrationCollectorView for why identity by
+                    // ObjectIdentifier is required here too.
                     FidoAuthenticationCollectorView(collector: fidoAuthenticationCollector, onNext: { onNext(true) })
+                        .id(ObjectIdentifier(fidoAuthenticationCollector))
                 case let booleanCollector as BooleanCollector:
                     BooleanCollectorView(field: booleanCollector, onNodeUpdated: onNodeUpdated)
                 case let readOnlyTextCollector as ReadOnlyTextCollector:
                     ReadOnlyTextView(field: readOnlyTextCollector)
+                case let imageCollector as ImageCollector:
+                    ImageView(collector: imageCollector).id(imageCollector.id)
+                case let metadataCollector as MetadataCollector:
+                    MetadataView(field: metadataCollector, onNext: onNext)
                 default:
                     EmptyView()
                 }
             }
 
             // Fallback Next Button
-            if !continueNode.collectors.contains(where: { $0 is FlowCollector || $0 is SubmitCollector || $0 is DeviceRegistrationCollector || $0 is DeviceAuthenticationCollector || $0 is FidoRegistrationCollector || $0 is FidoAuthenticationCollector || $0 is PollingCollector }) {
+            if !continueNode.collectors.contains(where: { $0 is FlowCollector || $0 is SubmitCollector || $0 is DeviceRegistrationCollector || $0 is DeviceAuthenticationCollector || $0 is FidoRegistrationCollector || $0 is FidoAuthenticationCollector || $0 is PollingCollector || $0 is MetadataCollector }) {
                 Button(action: { onNext(false) }) {
                     Text("Next")
                         .frame(maxWidth: .infinity)
