@@ -71,7 +71,7 @@ open class PingOneRecognizeAuthenticateCallback: AbstractRecognizeCallback, @unc
     /// - `.active` — device is enrolled, proceed with authentication.
     /// - `.notEnrolled` — device is not enrolled, proceed with enrollment.
     /// - `.otherError(message:code:debuggingInfo:)` — unexpected error, propagate to caller.
-    public enum ValidationResult {
+    public enum ValidationResult: Sendable {
         case active
         case notEnrolled
         case otherError(message: String, code: Int, debuggingInfo: [String: String] = [:])
