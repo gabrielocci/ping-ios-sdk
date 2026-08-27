@@ -58,10 +58,6 @@ public struct RecognizeMobileSDKOptions: Sendable {
 
     // MARK: Enrollment-only options
 
-    /// A custom secret to bind to the enrollment record.
-    /// - Note: Parsed from the server but not yet forwarded to the Keyless SDK — behaviour under investigation.
-    public var customSecret: String { raw[JourneyConstants.customSecret] ?? "" }
-
     /// Whether to show a failure feedback overlay when enrollment fails.
     public var showFailureFeedback: Bool? { raw[JourneyConstants.showFailureFeedback].flatMap(Bool.init) }
 
@@ -493,7 +489,6 @@ extension JourneyConstants {
     static let operationInfoExternalUserId = "operationInfoExternalUserId"
     static let cameraDelaySeconds = "cameraDelaySeconds"
     static let showSuccessFeedback = "showSuccessFeedback"
-    static let customSecret = "customSecret"
     static let showFailureFeedback = "showFailureFeedback"
     static let showInstructionsScreen = "showInstructionsScreen"
     static let presentation = "presentation"

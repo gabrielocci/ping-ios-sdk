@@ -141,7 +141,6 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
             JourneyConstants.operationInfoId: "op-id-123",
             JourneyConstants.operationInfoPayload: "payload-abc",
             JourneyConstants.operationInfoExternalUserId: "user-xyz",
-            JourneyConstants.customSecret: "secret-value",
             JourneyConstants.presentation: "OVERLAY",
             JourneyConstants.presentationStyle: "CAMERA_PREVIEW"
         ])
@@ -149,7 +148,6 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         XCTAssertEqual(opts.operationInfoId, "op-id-123")
         XCTAssertEqual(opts.operationInfoPayload, "payload-abc")
         XCTAssertEqual(opts.operationInfoExternalUserId, "user-xyz")
-        XCTAssertEqual(opts.customSecret, "secret-value")
         XCTAssertEqual(opts.presentation, "OVERLAY")
         XCTAssertEqual(opts.presentationStyle, "CAMERA_PREVIEW")
     }
@@ -160,7 +158,6 @@ final class RecognizeMobileSDKOptionsTests: XCTestCase {
         XCTAssertEqual(opts.operationInfoId, "")
         XCTAssertEqual(opts.operationInfoPayload, "")
         XCTAssertEqual(opts.operationInfoExternalUserId, "")
-        XCTAssertEqual(opts.customSecret, "")
         XCTAssertEqual(opts.presentation, "")
         XCTAssertEqual(opts.presentationStyle, "")
     }
@@ -283,6 +280,14 @@ final class RecognizeCallbackInitValueTests: XCTestCase {
         callback.initValue(name: JourneyConstants.mobileSDKOptions, value: raw)
         // The value 4 is coerced to "4" via string interpolation; Int("4") == 4
         XCTAssertEqual(callback.mobileSDKOptions.cameraDelaySeconds, 4)
+    }
+
+    func testInitValueMobileSDKOptionsUnknownCustomSecretIsIgnored() {
+        let callback = RecognizeCallback()
+        let raw: [String: Any] = ["customSecret": "server-secret"]
+        callback.initValue(name: JourneyConstants.mobileSDKOptions, value: raw)
+        XCTAssertEqual(callback.mobileSDKOptions.livenessConfiguration, "")
+        XCTAssertNil(callback.mobileSDKOptions.cameraDelaySeconds)
     }
 
     func testInitValueMobileSDKOptionsEmptyDictProducesNilForOptionals() {
