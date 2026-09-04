@@ -1,5 +1,5 @@
 {
-  "originHash" : "628d78a83246a56a473be1ceee9cd816c614644d78fe2071885ee3090c352805",
+  "originHash" : "e0f28660e4ed967d5e12b7a831eed7091ca70b16b76ae6150b91c80be4df008d",
   "pins" : [
     {
       "identity" : "app-check",
@@ -71,14 +71,6 @@
       "state" : {
         "revision" : "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
         "version" : "101.0.0"
-      }
-    },
-    {
-      "identity" : "keyless.mobile-sdk",
-      "kind" : "registry",
-      "location" : "",
-      "state" : {
-        "version" : "6.0.0"
       }
     },
     {
